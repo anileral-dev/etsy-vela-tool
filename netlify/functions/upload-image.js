@@ -3,42 +3,56 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
   try {
-    const { prompt } = JSON.parse(event.body || '{}');
-    if (!prompt) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'prompt gerekli' }) };
-    }
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Sunucuda ANTHROPIC_API_KEY tanımlı değil. Netlify > Site settings > Environment variables kısmından ekle, sonra yeniden deploy et.' })
-      };
+    const { base64Data, mimeType } = JSON.parse(event.body || '{}');
+    if (!base64Data) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'base64Data gerekli' }) };
     }
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const imgbbKey = process.env.IMGBB_API_KEY;
+
+    // Try ImgBB first if a key is configured server-side
+    if (imgbbKey) {
+      try {
+        const form = new FormData();
+        form.append('image', base64Data);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(imgbbKey)}`, {
+          method: 'POST',
+          body: form
+        });
+        const rawText = await res.text();
+        let data = {};
+        try { data = JSON.parse(rawText); } catch (e) { /* non-JSON response */ }
+        if (res.ok && data.success) {
+          const url = data.data && (data.data.url || data.data.display_url);
+          if (url) {
+            return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, provider: 'imgbb' }) };
+          }
+        }
+        // fall through to catbox.moe below if ImgBB didn't return a usable url
+      } catch (imgbbErr) {
+        // network-level failure on ImgBB — fall through to catbox.moe
+      }
+    }
+
+    // Default / fallback: catbox.moe, no key needed
+    const buffer = Buffer.from(base64Data, 'base64');
+    const blob = new Blob([buffer], { type: mimeType || 'image/png' });
+    const catboxForm = new FormData();
+    catboxForm.append('reqtype', 'fileupload');
+    catboxForm.append('fileToUpload', blob, 'photo.png');
+    const catboxRes = await fetch('https://catbox.moe/user/api.php', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: catboxForm
     });
-
-    const data = await res.json();
-    if (!res.ok) {
-      return {
-        statusCode: res.status,
-        body: JSON.stringify({ error: (data && data.error && data.error.message) || 'Claude API hatası' })
-      };
+    const catboxText = (await catboxRes.text()).trim();
+    if (catboxRes.ok && catboxText.startsWith('http')) {
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: catboxText, provider: 'catbox' }) };
     }
 
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) };
+    return {
+      statusCode: 502,
+      body: JSON.stringify({ error: 'Hem ImgBB hem catbox.moe yüklemesi başarısız oldu: ' + catboxText.slice(0, 200) })
+    };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
