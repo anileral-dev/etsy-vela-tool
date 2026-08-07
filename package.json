@@ -1,0 +1,8 @@
+{
+  "name": "etsy-vela-tool",
+  "private": true,
+  "version": "2.0.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
