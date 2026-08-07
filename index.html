@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etsy → Vela İçe Aktarma Konsolu</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#FFFFFF;
+  --bg-subtle:#F7F8FA;
+  --surface:#FFFFFF;
+  --border:#E4E7EC;
+  --border-strong:#D0D5DD;
+  --text:#101828;
+  --text-2:#475467;
+  --text-3:#98A2B3;
+  --accent:#4F46E5;
+  --accent-hover:#4338CA;
+  --accent-soft:#EEF2FF;
+  --success:#079455;
+  --success-soft:#ECFDF3;
+  --danger:#D92D20;
+  --danger-soft:#FEF3F2;
+  --warning:#B25E09;
+  --warning-soft:#FFFAEB;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,0.05);
+  --shadow-md: 0 4px 12px rgba(16,24,40,0.06), 0 2px 4px rgba(16,24,40,0.04);
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:100px;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
+
+/* ---------- Top header ---------- */
+.topbar{border-bottom:1px solid var(--border);padding:22px 0 0;}
+.brand-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.brand-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 6px;font-weight:600;}
+h1{font-size:24px;font-weight:800;margin:0 0 4px;letter-spacing:-0.02em;}
+.sub{color:var(--text-2);font-size:13.5px;max-width:560px;line-height:1.55;margin:0;}
+.statuspills{display:flex;gap:8px;flex-wrap:wrap;}
+.pill{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;
+  padding:6px 11px;border-radius:999px;border:1px solid var(--border);
+  color:var(--text-3);display:flex;align-items:center;gap:6px;white-space:nowrap;
+}
+.pill .dot{width:6px;height:6px;border-radius:50%;background:var(--border-strong);}
+.pill.done{color:var(--success);border-color:var(--success-soft);background:var(--success-soft);}
+.pill.done .dot{background:var(--success);}
+.pill.active{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft);}
+.pill.active .dot{background:var(--accent);}
+
+/* ---------- Tabs ---------- */
+.globalrun{
+  display:flex;align-items:center;gap:10px;padding:9px 14px;margin-bottom:10px;
+  background:var(--accent-soft);border:1px solid #C7D2FE;border-radius:10px;
+  font-size:12.5px;color:var(--accent);
+}
+.globalrun .spin{border-top-color:var(--accent);}
+.globalrun #globalRunText{flex:1;font-weight:600;}
+
+.tabbar{
+  display:flex;overflow-x:auto;gap:4px;padding:4px 0 0;
+  scrollbar-width:none;
+}
+.tabbar::-webkit-scrollbar{display:none;}
+.tab{
+  font-family:'Inter',sans-serif;font-size:13.5px;font-weight:600;color:var(--text-3);
+  background:none;border:none;padding:12px 16px;white-space:nowrap;position:relative;cursor:pointer;
+  border-bottom:2px solid transparent;
+}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab .badge{
+  display:inline-block;margin-left:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;
+  background:var(--bg-subtle);color:var(--text-2);border-radius:999px;padding:1px 7px;
+}
+.tab.active .badge{background:var(--accent-soft);color:var(--accent);}
+
+.tabpanel{display:none;padding:26px 0 10px;}
+.tabpanel.active{display:block;animation:fadein .18s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(2px);}to{opacity:1;transform:none;}}
+
+/* ---------- Panels / cards ---------- */
+.panel{
+  border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  padding:22px;margin-bottom:18px;box-shadow:var(--shadow-sm);
+}
+.panel h2{font-size:15px;margin:0 0 4px;font-weight:700;letter-spacing:-0.01em;}
+.panel .desc{color:var(--text-2);font-size:13px;margin:0 0 16px;line-height:1.55;}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;}
+
+/* ---------- Upload ---------- */
+.dropzone{
+  border:1.5px dashed var(--border-strong);border-radius:12px;background:var(--bg-subtle);
+  padding:36px 20px;text-align:center;cursor:pointer;transition:.15s;
+}
+.dropzone:hover, .dropzone.drag{border-color:var(--accent);background:var(--accent-soft);}
+.dropzone .big{font-size:14.5px;font-weight:600;margin-bottom:4px;color:var(--text);}
+.dropzone .small{color:var(--text-3);font-size:12.5px;}
+input[type=file]{display:none;}
+.filepill{
+  display:inline-flex;align-items:center;gap:8px;background:var(--success-soft);
+  border:1px solid #B4E6CD;color:var(--success);border-radius:999px;padding:7px 14px;
+  font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin-top:14px;font-weight:500;
+}
+
+/* ---------- Buttons ---------- */
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;}
+.btn{padding:10px 18px;border-radius:9px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:.13s;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:var(--accent-hover);}
+.btn-primary:disabled{background:var(--border-strong);color:#fff;cursor:not-allowed;opacity:.7;}
+.btn-ghost{background:#fff;color:var(--text);border:1px solid var(--border-strong);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger-ghost{background:#fff;color:var(--danger);border:1px solid #FDA29B;}
+.btn-danger-ghost:hover{background:var(--danger-soft);}
+.btn-soft{background:var(--accent-soft);color:var(--accent);}
+.btn-soft:hover{background:#E0DEFB;}
+.btn-sm{padding:7px 13px;font-size:12px;border-radius:7px;}
+.btn-xs{padding:5px 10px;font-size:11.5px;border-radius:6px;}
+
+/* ---------- Form fields ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:11.5px;color:var(--text-2);font-weight:600;letter-spacing:.01em;}
+.field .hint{font-size:11px;color:var(--text-3);font-weight:400;margin-top:-2px;}
+.field input, .field select, .field textarea{
+  background:#fff;border:1px solid var(--border-strong);border-radius:8px;
+  padding:9px 11px;color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;
+  transition:.12s;
+}
+.field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+.field textarea{resize:vertical;font-family:'Inter',sans-serif;line-height:1.5;}
+.field input::placeholder, .field textarea::placeholder{color:var(--text-3);}
+
+/* ---------- Raw preview table ---------- */
+.tablewrap{overflow:auto;max-height:260px;border:1px solid var(--border);border-radius:10px;margin-top:14px;}
+table{border-collapse:collapse;width:100%;font-size:12px;font-family:'IBM Plex Mono',monospace;}
+th,td{padding:8px 11px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;}
+th{color:var(--accent);position:sticky;top:0;background:var(--bg-subtle);font-weight:600;}
+td{color:var(--text-2);}
+
+/* ---------- Product cards ---------- */
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.toolbar .count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-3);}
+.cards{display:flex;flex-direction:column;gap:16px;}
+.card{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;box-shadow:var(--shadow-sm);}
+.photostrip{display:flex;gap:10px;padding:14px;background:var(--bg-subtle);border-bottom:1px solid var(--border);overflow-x:auto;}
+.photostrip-item{flex:0 0 auto;width:104px;}
+.photostrip-label{font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:var(--text-3);margin-bottom:5px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.photostrip-label.orig{color:var(--text-2);font-weight:600;}
+.photostrip-label.done-label{color:var(--success);}
+.photostrip-img{width:104px;height:104px;border-radius:8px;overflow:hidden;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;}
+.photostrip-img.empty{border-style:dashed;}
+.photostrip-img img{width:100%;height:100%;object-fit:cover;}
+.photostrip-img .ph2{font-size:9px;color:var(--text-3);text-align:center;font-family:'IBM Plex Mono',monospace;}
+.photostrip-arrow{align-self:center;color:var(--text-3);font-size:16px;flex:0 0 auto;}
+.photostrip-link{
+  margin-top:6px;font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:var(--accent);
+  background:var(--accent-soft);border:1px solid #C7D2FE;border-radius:6px;padding:4px 6px;
+  width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:block;
+}
+.photostrip-link:hover{background:#E0DEFB;}
+.photostrip-nolink{margin-top:6px;font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--warning);text-align:center;}
+.card .body{padding:16px 18px;}
+.card .titlerow{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+.card .titlerow input{flex:1;font-size:14.5px;font-weight:600;padding:8px 10px;}
+.sectionchip{
+  font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);
+  background:var(--accent-soft);padding:4px 10px;border-radius:6px;white-space:nowrap;margin-top:6px;
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+
+/* ---------- Live status ---------- */
+.progressbar-wrap{height:6px;border-radius:999px;background:var(--bg-subtle);border:1px solid var(--border);margin-top:12px;overflow:hidden;}
+.progressbar{height:100%;width:0%;background:var(--accent);transition:width .2s ease;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.statusbanner{
+  display:flex;align-items:center;gap:9px;padding:11px 16px;font-size:14px;font-weight:700;
+  border-radius:10px;margin-bottom:14px;letter-spacing:-0.005em;
+}
+.statusbanner .dotspin{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1s ease-in-out infinite;flex:0 0 auto;}
+.statusbanner.pending{background:var(--bg-subtle);color:var(--text-2);border:1.5px solid var(--border-strong);}
+.statusbanner.processing{background:var(--warning-soft);color:var(--warning);border:1.5px solid #FEC84B;}
+.statusbanner.partial{background:var(--accent-soft);color:var(--accent);border:1.5px solid #A5B4FC;}
+.statusbanner.done{background:var(--success-soft);color:var(--success);border:1.5px solid #75E0A7;}
+.statusbanner.error{background:var(--danger-soft);color:var(--danger);border:1.5px solid #FDA29B;}
+
+.etsylink{font-size:11px;color:var(--text-3);margin-top:6px;display:block;}
+.etsylink a{color:var(--accent);text-decoration:none;}
+.etsylink a:hover{text-decoration:underline;}
+.card.is-pending{opacity:.75;}
+.card.is-error{border-color:#FDA29B;}
+
+/* ---------- History ---------- */
+.jobrow{
+  display:grid;grid-template-columns:56px 1fr auto auto;gap:14px;align-items:center;
+  padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:#fff;
+}
+.jobrow .jobthumb{width:56px;height:56px;border-radius:8px;overflow:hidden;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;}
+.jobrow .jobthumb img{width:100%;height:100%;object-fit:cover;}
+.jobrow .jobmeta{min-width:0;}
+.jobrow .jobname{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.jobrow .jobsub{font-size:11.5px;color:var(--text-3);font-family:'IBM Plex Mono',monospace;margin-top:3px;}
+.jobrow .jobstatus{font-size:11px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;}
+.jobrow .jobactions{display:flex;gap:6px;}
+
+
+.tagbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.tagitem{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--bg-subtle);
+  border:1px solid var(--border);color:var(--text);padding:4px 9px;border-radius:6px;
+  display:flex;align-items:center;gap:6px;
+}
+.tagitem.bad{border-color:var(--danger);color:var(--danger);background:var(--danger-soft);}
+.tagitem button{background:none;color:inherit;font-size:12px;line-height:1;padding:0;opacity:.5;}
+.tagitem button:hover{opacity:1;}
+
+/* ---------- AI prompt drawer ---------- */
+.drawer{border-top:1px solid var(--border);margin-top:14px;}
+.drawer-toggle{
+  width:100%;text-align:left;background:none;padding:12px 0 6px;display:flex;justify-content:space-between;
+  align-items:center;font-size:12.5px;font-weight:600;color:var(--text-2);
+}
+.drawer-toggle:hover{color:var(--accent);}
+.drawer-toggle .chev{transition:.15s;font-size:11px;}
+.drawer-body{display:none;padding-top:6px;}
+.drawer-body.open{display:block;}
+
+.promptfield{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--bg-subtle);}
+.promptfield .plabel{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.promptfield .plabel span{font-size:12px;font-weight:600;color:var(--text);}
+.promptfield textarea{min-height:56px;width:100%;background:#fff;}
+
+.photoslot{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--bg-subtle);}
+.photoslot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.photoslot-head span{font-size:12px;font-weight:600;}
+.photoslot-body{display:grid;grid-template-columns:1fr 90px;gap:10px;align-items:start;}
+.photoslot textarea{min-height:52px;background:#fff;}
+.photoresult{width:90px;height:90px;border-radius:8px;border:1px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.photoresult img{width:100%;height:100%;object-fit:cover;}
+.photoresult .ph{font-size:9px;color:var(--text-3);text-align:center;font-family:'IBM Plex Mono',monospace;}
+.photoslot-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+.errtext{font-size:11px;color:var(--danger);margin-top:6px;line-height:1.4;}
+.manualupload{font-size:11px;color:var(--text-3);margin-top:6px;}
+.manualupload label{color:var(--accent);cursor:pointer;text-decoration:underline;}
+
+.notice{font-size:12px;color:var(--warning);background:var(--warning-soft);border:1px solid #FEDF89;border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.55;}
+.notice.info{color:var(--accent);background:var(--accent-soft);border-color:#C7D2FE;}
+
+/* ---------- export bar ---------- */
+.exportbar{
+  position:sticky;bottom:16px;margin-top:20px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.94);backdrop-filter:blur(8px);border-radius:14px;
+  padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+  box-shadow:var(--shadow-md);
+}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.emptystate{text-align:center;padding:60px 20px;color:var(--text-3);}
+.emptystate .big{font-size:14px;color:var(--text);margin-bottom:6px;font-weight:600;}
+
+.apikeybox{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.apikeybox .field{flex:1;min-width:260px;}
+.keystatus{font-size:11.5px;font-family:'IBM Plex Mono',monospace;padding:9px 12px;border-radius:8px;white-space:nowrap;}
+.keystatus.missing{color:var(--text-3);background:var(--bg-subtle);border:1px solid var(--border);}
+.keystatus.ok{color:var(--success);background:var(--success-soft);border:1px solid #B4E6CD;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand-row">
+      <div>
+        <p class="brand-eyebrow">Etsy → Vela otomasyon</p>
+        <h1>İçe Aktarma &amp; Düzenleme Konsolu</h1>
+        <p class="sub">Ham scrape verisini yükle, AI ile başlık/açıklama/kategori/etiket üret, Gemini ile fotoğrafları düzenle, tek tıkla Vela formatında indir.</p>
+      </div>
+      <div class="statuspills">
+        <span class="pill" id="pill-1"><span class="dot"></span><span>1 · İçe Aktar</span></span>
+        <span class="pill" id="pill-2"><span class="dot"></span><span>2 · AI Analiz</span></span>
+        <span class="pill" id="pill-3"><span class="dot"></span><span>3 · Görseller</span></span>
+        <span class="pill" id="pill-4"><span class="dot"></span><span>4 · Export</span></span>
+      </div>
+    </div>
+    <div class="globalrun" id="globalRunBar" style="display:none;">
+      <span class="spin"></span>
+      <span id="globalRunText" class="mono">İşleniyor…</span>
+      <button class="btn btn-xs btn-ghost" id="globalStopBtn">⏹ Durdur</button>
+    </div>
+    <nav class="tabbar">
+      <button class="tab active" data-tab="import">İçe Aktar</button>
+      <button class="tab" data-tab="settings">Ayarlar &amp; AI</button>
+      <button class="tab" data-tab="products">Ürünler <span class="badge" id="tabProductCount">0</span></button>
+      <button class="tab" data-tab="export">Dışa Aktar</button>
+      <button class="tab" data-tab="history">Geçmiş <span class="badge" id="tabHistoryCount">0</span></button>
+    </nav>
+  </div>
+
+  <!-- =============== TAB: IMPORT =============== -->
+  <div class="tabpanel active" id="tab-import">
+    <div class="panel">
+      <h2>Dosyayı yükle</h2>
+      <p class="desc">.xlsx veya .csv kabul edilir. Apple Numbers kullanıyorsan dosya menüsünden "Export To → CSV" ile dışa aktarıp öyle yükle — tarayıcı .numbers dosyasını doğrudan okuyamıyor. Kolon adları ne olursa olsun sorun değil, AI kendisi anlayacak.</p>
+      <div class="dropzone" id="dropzone">
+        <div class="big">Dosyayı buraya sürükle ya da tıkla</div>
+        <div class="small">.xlsx / .csv</div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+      </div>
+      <div id="filepillWrap"></div>
+      <div id="rawPreviewWrap" style="display:none;">
+        <div class="tablewrap"><table id="rawTable"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============== TAB: SETTINGS =============== -->
+  <div class="tabpanel" id="tab-settings">
+
+    <div class="panel">
+      <h2>Gemini API anahtarı</h2>
+      <p class="desc">Bu araç tamamen Google Gemini üzerinden çalışıyor — hem metin üretimi hem foto düzenleme aynı anahtarı kullanıyor. Anahtar bu tarayıcıda (localStorage) saklanır, sayfayı kapatıp açsan bile kalır — hiçbir sunucuya gönderilmez.</p>
+      <div class="apikeybox" style="margin-bottom:14px;">
+        <div class="field"><label>Google Gemini API Key</label><input type="password" id="geminiKey" placeholder="AIza..."></div>
+        <span class="keystatus missing" id="keyStatus">● Bağlı değil</span>
+      </div>
+      <p class="hint" style="font-size:11.5px;color:var(--text-3);margin:-6px 0 0;">Tek anahtar her şeyi hallediyor — hem title/description/kategori/tag üretimi (Gemini metin modeli) hem foto düzenleme (Gemini görsel modeli / "nano banana") bu anahtarı kullanır. <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">Google AI Studio</a>'dan alabilirsin — faturalandırma bağlı bir proje seçmen görsel düzenlemede daha sorunsuz çalışır.</p>
+      <div class="notice" style="margin-top:14px;">
+        ⚠️ Bu dosyayı sadece kendi bilgisayarında/sitende kullan, kimseyle paylaşma. Anahtarlar bu tarayıcıda (localStorage) saklanıyor — aynı tarayıcıyı/bilgisayarı kullanan başka biri de bu siteye girerse anahtarlarını görebilir.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Fotoğraf host'u</h2>
+      <p class="desc">Gemini'nin düzenlediği fotoğraflar veri olarak dönüyor; Vela gerçek bir link istiyor. Bu artık <b>sunucu tarafında</b> (Netlify Function üzerinden) otomatik yükleniyor — tarayıcı/ağ engelleri (CORS, reklam engelleyici, ISP filtresi vb.) devre dışı, çünkü istek senin tarayıcından değil Netlify'ın kendi sunucusundan gidiyor. Anahtar/anahtarsız fark etmeden, hiçbir ayar yapmana gerek yok.</p>
+      <button class="btn btn-ghost btn-sm" id="testUploadBtn">🔎 Yükleme fonksiyonunu test et</button>
+      <span id="testUploadResult" class="mono" style="margin-left:10px;font-size:12px;"></span>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div><h2>Sabit alanlar</h2><p class="desc" style="margin:0;">Hepsi düzenlenebilir — export sırasında her ürüne otomatik uygulanır, istersen ürün bazında da değiştirebilirsin.</p></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>Who made it?</label>
+          <select id="d_whomade"><option>Another company or person</option><option>I did</option><option>A member of my shop</option></select></div>
+        <div class="field"><label>What is it?</label>
+          <select id="d_whatisit"><option>A finished product</option><option>A supply or tool to make things</option></select></div>
+        <div class="field"><label>When was it made?</label>
+          <select id="d_whenmade"><option>2020 - 2026</option><option>Made to order</option><option>2010 - 2019</option><option>Before 2004</option></select></div>
+        <div class="field"><label>Renewal options</label>
+          <select id="d_renewal"><option>Automatic</option><option>Manual</option></select></div>
+        <div class="field"><label>Product type</label>
+          <select id="d_producttype"><option>Physical</option><option>Digital</option></select></div>
+        <div class="field"><label>Production partner</label>
+          <input id="d_prodpartner" placeholder="örn. Fearless Apparel"></div>
+        <div class="field"><label>Shipping profile</label>
+          <input id="d_shipping" value="US Shipment"></div>
+        <div class="field"><label>Return policy</label>
+          <input id="d_return" value="30 days to return or exchange"></div>
+        <div class="field"><label>Varsayılan fiyat</label>
+          <input id="d_price" type="number" step="0.01" placeholder="örn. 19.99"></div>
+        <div class="field"><label>Varsayılan adet</label>
+          <input id="d_qty" type="number" placeholder="örn. 999"></div>
+        <div class="field"><label>SKU ön eki</label>
+          <input id="d_skuprefix" placeholder="örn. FA-"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>AI prompt varsayılanları</h2>
+      <p class="desc">AI ürünleri ilk analiz ederken bu talimatları kullanır. Her ürün kartında da ayrı ayrı düzenleyip yeniden üretebilirsin.</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+        <div class="field"><label>Başlık talimatı</label>
+          <textarea id="d_titleprompt" style="min-height:64px;">Başlığı Etsy SEO kurallarına uygun, 100-140 karakter, iddiasız ve net şekilde düzenle.</textarea></div>
+        <div class="field"><label>Açıklama talimatı</label>
+          <textarea id="d_descprompt" style="min-height:64px;">En az 120 kelime, ürünün olası kullanım alanlarını, materyalini ve hediye fikrini içeren özgün ve SEO dostu bir açıklama yaz.</textarea></div>
+        <div class="field"><label>Tag talimatı</label>
+          <textarea id="d_tagprompt" style="min-height:64px;">Etsy arama davranışına uygun long-tail anahtar kelimeler kullan; ürünün stilini, olası kullanım alanlarını ve hediye fikirlerini yansıtsın. Ürün adını birebir tekrar eden tekil kelimelerden kaçın.</textarea></div>
+      </div>
+      <p class="hint" style="font-size:11px;color:var(--text-3);margin-top:8px;">Format kuralları (en fazla 13 tag, her biri en fazla 20 karakter) her durumda uygulanır — buraya yazdığın talimat sadece tag'lerin <i>içeriğini/tonunu</i> yönlendirir.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Fotoğraf ayarları</h2>
+      <p class="desc">Ürün başına kaç fotoğraf varyasyonu üreteceğini seç. Aşağıya yazdığın prompt'lar <b>tüm ürünlere aynı şekilde uygulanır</b> — "Ürünler" sekmesindeki "Tüm fotoğrafları düzenle" butonuna bastığında, her ürünün kendi kaynak fotoğrafı bu talimatlara göre tek tek düzenlenir. (İstersen sonradan tek bir ürün için kart üzerinden ayrıca farklı bir prompt da deneyebilirsin.)</p>
+      <div class="field" style="max-width:220px;">
+        <label>Ürün başına fotoğraf sayısı</label>
+        <select id="d_photocount"><option value="1">1 fotoğraf</option><option value="2" selected>2 fotoğraf</option><option value="3">3 fotoğraf</option></select>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="field" data-photoprompt-field="0" style="margin-bottom:12px;">
+          <label>Fotoğraf 1 prompt'u (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_0" style="min-height:56px;" placeholder="örn. Beyaz stüdyo zemininde, yumuşak gölgeli, profesyonel ürün çekimi"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="1" style="margin-bottom:12px;">
+          <label>Fotoğraf 2 prompt'u (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_1" style="min-height:56px;" placeholder="örn. Sıcak lifestyle sahnesi, doğal ışık, kullanım anında"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="2" style="margin-bottom:12px;">
+          <label>Fotoğraf 3 prompt'u (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_2" style="min-height:56px;" placeholder="örn. Minimal mockup üzerinde, pastel arka plan"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============== TAB: PRODUCTS =============== -->
+  <div class="tabpanel" id="tab-products">
+    <div class="panel" id="fullRunPanel" style="border-color:#C7D2FE;background:var(--accent-soft);">
+      <h2>▶ Hepsini çalıştır (önerilen)</h2>
+      <p class="desc">Tek tıkla: önce her ürün için title/description/kategori/tag üretir, sonra "Ayarlar & AI"da girdiğin genel foto prompt'larıyla tüm fotoğrafları düzenler. İstediğin an durdurabilir, kaldığın yerden devam edebilir ya da o ana kadar bitenlerle export alabilirsin.</p>
+      <button class="btn btn-primary" id="fullRunBtn">▶ Hepsini Çalıştır</button>
+      <button class="btn btn-ghost" id="fullStopBtn" style="display:none;">⏹ Durdur</button>
+      <span id="fullRunStatus" class="mono" style="margin-left:12px;font-size:12.5px;color:var(--text-2);"></span>
+      <div class="progressbar-wrap" id="fullProgressbarWrap" style="display:none;">
+        <div class="progressbar" id="fullProgressbar"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="analyzePanel">
+      <h2>Sadece metni çıkar <span class="mono" style="font-size:11px;font-weight:400;color:var(--text-3);">(ayrı çalıştırmak istersen)</span></h2>
+      <p class="desc">Ürünleri tek tek işler, her biri bitince kartı canlı günceller. İstediğin an durdurabilir, kaldığın yerden devam edebilirsin.</p>
+      <button class="btn btn-primary" id="analyzeBtn">✦ AI ile ürünleri çıkar</button>
+      <button class="btn btn-ghost" id="stopBtn" style="display:none;">⏹ Durdur</button>
+      <span id="analyzeStatus" class="mono" style="margin-left:12px;font-size:12.5px;color:var(--text-3);"></span>
+      <div class="progressbar-wrap" id="progressbarWrap" style="display:none;">
+        <div class="progressbar" id="progressbar"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="photoEditPanel">
+      <h2>Sadece fotoğrafları düzenle <span class="mono" style="font-size:11px;font-weight:400;color:var(--text-3);">(ayrı çalıştırmak istersen)</span></h2>
+      <p class="desc">"Ayarlar &amp; AI" sekmesinde girdiğin genel foto prompt'larını <b>tüm ürünlere</b> tek seferde uygular — her ürünün kendi kaynak fotoğrafı, aynı talimatlarla tek tek düzenlenir. İstediğin an durdurabilir, kaldığın yerden devam edebilirsin.</p>
+      <button class="btn btn-primary" id="photoEditAllBtn">🎨 Tüm fotoğrafları düzenle</button>
+      <button class="btn btn-ghost" id="photoStopBtn" style="display:none;">⏹ Durdur</button>
+      <span id="photoEditStatus" class="mono" style="margin-left:12px;font-size:12.5px;color:var(--text-3);"></span>
+      <div class="progressbar-wrap" id="photoProgressbarWrap" style="display:none;">
+        <div class="progressbar" id="photoProgressbar"></div>
+      </div>
+    </div>
+
+    <div id="productsWrap" style="display:none;">
+      <div class="toolbar">
+        <div class="count mono" id="productCount">0 ürün</div>
+        <button class="btn btn-ghost btn-sm" id="reanalyzeBtn">↻ Metni baştan üret (foto etkilenmez)</button>
+      </div>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <div class="emptystate" id="emptyState">
+      <div class="big">Henüz ürün yok</div>
+      <div>Önce "İçe Aktar" sekmesinden bir dosya yükle.</div>
+    </div>
+  </div>
+
+  <!-- =============== TAB: EXPORT =============== -->
+  <div class="tabpanel" id="tab-export">
+    <div class="panel">
+      <h2>Vela formatında indir</h2>
+      <p class="desc" id="exportDesc">Henüz çıkarılmış ürün yok.</p>
+      <p class="desc" id="exportPhotoSummary" style="margin-top:-8px;"></p>
+      <button class="btn btn-primary" id="exportBtn">⬇ .xlsx olarak indir</button>
+      <button class="btn btn-ghost" id="exportGoPhotosBtn" style="display:none;">🎨 Önce fotoğrafları düzenle</button>
+      <div class="notice info" style="margin-top:14px;">
+        Düzenlenen fotoğraflar artık otomatik olarak (varsayılan: catbox.moe, ya da girdiysen ImgBB) yüklenip linki buraya düşer, elle bir şey yapman gerekmez. Boş kalan slotlar (hiç düzenlenmemişse) orijinal Etsy görselinin linkini kullanır.
+      </div>
+    </div>
+  </div>
+
+  <!-- =============== TAB: HISTORY =============== -->
+  <div class="tabpanel" id="tab-history">
+    <div class="panel">
+      <div class="panel-head">
+        <div><h2>Geçmiş importlar</h2><p class="desc" style="margin:0;">Her yüklediğin dosya otomatik kaydedilir — durumu ve ilerlemesiyle birlikte. Bu tarayıcıda saklanır, başka cihazdan görünmez.</p></div>
+      </div>
+      <div id="historyList"></div>
+      <div class="emptystate" id="historyEmpty">
+        <div class="big">Henüz geçmiş yok</div>
+        <div>Bir dosya içe aktardığında burada listelenecek.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const VELA_HEADERS = ["Title","Description","Category","Who made it?","What is it?","When was it made?","Renewal options","Product type","Tags","Materials","Production partners","Section","Price","Quantity","SKU","Variation 1","V1 Option","Variation 2","V2 Option","Var Price","Var Quantity","Var SKU","Var Visibility","Var Photo","Shipping profile","Weight","Length","Width","Height","Return policy","Photo 1","Photo 2","Photo 3","Photo 4","Photo 5","Photo 6","Photo 7","Photo 8","Photo 9","Photo 10","Video 1","Digital file 1","Digital file 2","Digital file 3","Digital file 4","Digital file 5"];
+
+let state = { headers: [], rows: [], products: [] };
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Job history (localStorage) ---------- */
+const HISTORY_KEY = 'etsy_vela_job_history_v1';
+const MAX_JOBS = 20;
+let currentJobId = null;
+
+function loadJobs(){
+  try{
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveJobs(jobs){
+  try{
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(jobs));
+    return true;
+  }catch(e){
+    // quota exceeded — strip heaviest fields (base64 edited image previews) and retry once
+    try{
+      const trimmed = jobs.map(j=>({
+        ...j,
+        products: (j.products||[]).map(p=>({
+          ...p,
+          editedImages: [null,null,null],
+          // a slot can only stay 'done' in storage if it still has a real hosted link;
+          // otherwise mark it back to pending so a reload doesn't show a false "done" state
+          photoStatus: (p.photoStatus||[]).map((st, i)=> (st==='done' && !p.finalUrls?.[i]) ? null : st)
+        }))
+      }));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+      return true;
+    }catch(e2){
+      console.error('Geçmiş kaydedilemedi (depolama dolu olabilir):', e2);
+      return false;
+    }
+  }
+}
+function jobSummary(job){
+  const total = (job.products||[]).length;
+  const done = (job.products||[]).filter(p=>p.status==='done').length;
+  if(!total) return 'boş';
+  return done===total ? `${total}/${total} tamamlandı` : `${done}/${total} tamamlandı`;
+}
+function createJob(filename){
+  const jobs = loadJobs();
+  const job = {
+    id: 'job_'+Date.now(),
+    filename: filename,
+    importedAt: Date.now(),
+    updatedAt: Date.now(),
+    headers: state.headers,
+    rows: state.rows,
+    products: state.products
+  };
+  jobs.unshift(job);
+  while(jobs.length > MAX_JOBS) jobs.pop();
+  saveJobs(jobs);
+  currentJobId = job.id;
+  renderHistoryList();
+}
+function updateCurrentJob(){
+  if(!currentJobId) return;
+  const jobs = loadJobs();
+  const idx = jobs.findIndex(j=>j.id===currentJobId);
+  if(idx===-1) return;
+  jobs[idx].headers = state.headers;
+  jobs[idx].rows = state.rows;
+  jobs[idx].products = state.products;
+  jobs[idx].updatedAt = Date.now();
+  saveJobs(jobs);
+  renderHistoryList();
+}
+function deleteJob(jobId){
+  const jobs = loadJobs().filter(j=>j.id!==jobId);
+  saveJobs(jobs);
+  if(currentJobId === jobId) currentJobId = null;
+  renderHistoryList();
+}
+function openJob(jobId){
+  const jobs = loadJobs();
+  const job = jobs.find(j=>j.id===jobId);
+  if(!job) return;
+  state.headers = job.headers || [];
+  state.rows = job.rows || [];
+  state.products = job.products || [];
+  currentJobId = job.id;
+  $('filepillWrap').innerHTML = `<div class="filepill">✓ ${escapeHtml(job.filename)} — ${state.rows.length} satır (geçmişten açıldı)</div>`;
+  if(state.headers.length) renderRawPreview();
+  setPill(1,'done');
+  $('emptyState').style.display = state.products.length ? 'none' : 'block';
+  renderProducts();
+  updateExportTab();
+  goTab('products');
+}
+function formatJobDate(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'numeric'}) + ' ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+}
+function renderHistoryList(){
+  const jobs = loadJobs();
+  $('tabHistoryCount').textContent = jobs.length;
+  const listEl = $('historyList');
+  $('historyEmpty').style.display = jobs.length ? 'none' : 'block';
+  listEl.innerHTML = '';
+  jobs.forEach(job=>{
+    const firstPhoto = (job.products||[]).find(p=>p.sourceImageUrl)?.sourceImageUrl;
+    const row = document.createElement('div');
+    row.className = 'jobrow';
+    row.innerHTML = `
+      <div class="jobthumb">${firstPhoto ? `<img src="${escapeHtml(firstPhoto)}" loading="lazy">` : ''}</div>
+      <div class="jobmeta">
+        <div class="jobname">${escapeHtml(job.filename)}</div>
+        <div class="jobsub">${formatJobDate(job.importedAt)} · ${(job.products||[]).length} ürün</div>
+      </div>
+      <div class="jobstatus">${escapeHtml(jobSummary(job))}</div>
+      <div class="jobactions">
+        <button class="btn btn-xs btn-primary" data-open-job="${job.id}">Aç</button>
+        <button class="btn btn-xs btn-danger-ghost" data-delete-job="${job.id}">Sil</button>
+      </div>
+    `;
+    listEl.appendChild(row);
+  });
+  listEl.querySelectorAll('[data-open-job]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openJob(btn.dataset.openJob));
+  });
+  listEl.querySelectorAll('[data-delete-job]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(confirm('Bu geçmiş kaydını silmek istediğine emin misin? Geri alınamaz.')) deleteJob(btn.dataset.deleteJob);
+    });
+  });
+}
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    $('tab-'+tab.dataset.tab).classList.add('active');
+  });
+});
+function goTab(name){
+  document.querySelector(`.tab[data-tab="${name}"]`).click();
+}
+function setPill(n, mode){
+  const el = $('pill-'+n);
+  el.classList.remove('active','done');
+  if(mode) el.classList.add(mode);
+}
+
+/* ---------- API key status ---------- */
+const API_KEYS_STORAGE = 'etsy_vela_api_keys_v1';
+function wireKeyStatus(inputId, statusId){
+  const el = $(inputId);
+  const ks = $(statusId);
+  function refreshStatus(){
+    if(el.value.trim().length > 10){
+      ks.textContent = '● Anahtar girildi'; ks.className='keystatus ok';
+    }else{
+      ks.textContent = '● Bağlı değil'; ks.className='keystatus missing';
+    }
+  }
+  el.addEventListener('input', ()=>{
+    refreshStatus();
+    try{
+      const saved = JSON.parse(localStorage.getItem(API_KEYS_STORAGE) || '{}');
+      saved[inputId] = el.value;
+      localStorage.setItem(API_KEYS_STORAGE, JSON.stringify(saved));
+    }catch(e){ /* storage unavailable — key just won't survive a reload */ }
+  });
+  // restore on load
+  try{
+    const saved = JSON.parse(localStorage.getItem(API_KEYS_STORAGE) || '{}');
+    if(saved[inputId]){ el.value = saved[inputId]; }
+  }catch(e){ /* ignore */ }
+  refreshStatus();
+}
+wireKeyStatus('geminiKey','keyStatus');
+
+/* ---------- File upload ---------- */
+const dropzone = $('dropzone');
+const fileInput = $('fileInput');
+dropzone.addEventListener('click', ()=>fileInput.click());
+dropzone.addEventListener('dragover', e=>{e.preventDefault(); dropzone.classList.add('drag');});
+dropzone.addEventListener('dragleave', ()=>dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e=>{
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e=>{ if(e.target.files.length) handleFile(e.target.files[0]); });
+
+function handleFile(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null});
+      let headerRowIdx = 0;
+      for(let i=0;i<Math.min(rows.length,5);i++){
+        const nonNull = rows[i].filter(c=>c!==null && c!=='').length;
+        if(nonNull >= 2){ headerRowIdx = i; break; }
+      }
+      const headers = rows[headerRowIdx].map((h,i)=> h===null || h==='' ? 'col_'+i : String(h));
+      const dataRows = rows.slice(headerRowIdx+1).filter(r=>r.some(c=>c!==null && c!==''));
+      state.headers = headers;
+      state.rows = dataRows.map(r=>{
+        const obj = {};
+        headers.forEach((h,i)=> obj[h] = r[i] ?? null);
+        return obj;
+      });
+      $('filepillWrap').innerHTML = `<div class="filepill">✓ ${file.name} — ${state.rows.length} satır algılandı</div>`;
+      renderRawPreview();
+      buildProductPlaceholders(file.name);
+      setPill(1,'done');
+      $('emptyState').style.display='none';
+      goTab('products');
+    }catch(err){
+      alert('Dosya okunamadı: '+err.message+'\n\nApple Numbers dosyasıysa önce CSV olarak dışa aktarman gerekiyor.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* Build lightweight per-row cards immediately from raw data — status:'pending' until AI runs */
+function buildProductPlaceholders(filename){
+  const titlePrompt = $('d_titleprompt').value;
+  const descPrompt = $('d_descprompt').value;
+  const tagPrompt = $('d_tagprompt').value;
+  state.products = state.rows.map((row, i)=>{
+    const rawImg = findImageUrl(row);
+    return {
+      id: 'p'+(i+1),
+      rawRow: row,
+      status: 'pending', // pending | processing | done | error
+      errorMsg: '',
+      title: guessRawTitle(row), description: '', category: '', section: '',
+      tags: [], materials: '',
+      sourceImageUrl: rawImg ? upscaleEtsyImage(rawImg) : null,
+      sourceEtsyLink: findEtsyLink(row),
+      titlePrompt: titlePrompt, descPrompt: descPrompt, tagPrompt: tagPrompt,
+      photoPrompts: Array.from({length:3}, ()=> ''),
+      editedImages: Array.from({length:3}, ()=> null),
+      finalUrls: Array.from({length:3}, ()=> ''),
+      photoStatus: Array.from({length:3}, ()=> null), // null|'loading'|'done'|'error'
+      photoErrors: Array.from({length:3}, ()=> ''),
+      price:'', quantity:'', sku:''
+    };
+  });
+  applyDefaultsToProducts();
+  renderProducts();
+  updateExportTab();
+  createJob(filename || 'içe aktarılan dosya');
+}
+
+function renderRawPreview(){
+  $('rawPreviewWrap').style.display = 'block';
+  const table = $('rawTable');
+  const showRows = state.rows.slice(0,8);
+  let html = '<thead><tr>' + state.headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
+  showRows.forEach(r=>{
+    html += '<tr>' + state.headers.map(h=>`<td title="${escapeHtml(String(r[h]??''))}">${escapeHtml(String(r[h]??''))}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- Image URL / link helpers ---------- */
+function findImageUrl(rowObj){
+  const vals = Object.values(rowObj).filter(v=>typeof v === 'string');
+  const candidates = vals.filter(v=>/\.(jpg|jpeg|png|webp)(\?|$)/i.test(v) && /^https?:\/\//i.test(v));
+  if(candidates.length===0) return null;
+  const etsy = candidates.find(c=>c.includes('etsystatic'));
+  return etsy || candidates[0];
+}
+function upscaleEtsyImage(url){
+  if(!url) return url;
+  return url.replace(/il_\d+x(\d+|N)\./i, 'il_fullxfull.');
+}
+function findEtsyLink(rowObj){
+  const vals = Object.values(rowObj).filter(v=>typeof v === 'string');
+  const link = vals.find(v=>/^https?:\/\//i.test(v) && /etsy\.com\/(listing|shop)/i.test(v));
+  return link || null;
+}
+function guessRawTitle(rowObj){
+  const vals = Object.values(rowObj).filter(v=>typeof v === 'string' && v.length > 10 && !/^https?:\/\//i.test(v));
+  if(!vals.length) return '';
+  return vals.reduce((a,b)=> b.length > a.length ? b : a, '');
+}
+
+/* ---------- Gemini text calls ---------- */
+async function callGeminiText(promptText){
+  const apiKey = $('geminiKey').value.trim();
+  if(!apiKey) throw new Error('Gemini API key girilmemiş — "Ayarlar & AI" sekmesinden ekle.');
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }] })
+  });
+  if(!res.ok){
+    const errBody = await res.text().catch(()=> '');
+    throw new Error('Gemini API hata '+res.status+(errBody?': '+errBody.slice(0,180):''));
+  }
+  const data = await res.json();
+  const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+  return parts.filter(p=>p.text).map(p=>p.text).join('\n');
+}
+
+function buildSingleProductPrompt(rawRow, titlePrompt, descPrompt, tagPrompt){
+  return `Sana Etsy'den scrape edilmiş HAM ve KARIŞIK bir veri satırı vereceğim (JSON objesi). Kolon adları anlamsız veya CSS class adı olabilir, önemli değil — içeriğe bakarak anla.
+
+Bu satır bir ürünü temsil ediyor. AŞAĞIDAKİ ŞEMAYA UYAN TEK BİR JSON objesi üret:
+{
+  "title": "...", "description": "...", "category": "Ana Kategori > Alt Kategori > Alt Kategori",
+  "section": "kısa mağaza bölümü adı (1-3 kelime)",
+  "tags": "virgülle ayrılmış EN FAZLA 13 etiket, HER BİRİ EN FAZLA 20 KARAKTER",
+  "materials": "tahmini malzeme listesi, tahmin edemiyorsan boş string"
+}
+
+Başlık için özel talimat: ${titlePrompt}
+Açıklama için özel talimat: ${descPrompt}
+Tag'ler için özel talimat: ${tagPrompt}
+(Tag format kuralları — en fazla 13 tag, her biri en fazla 20 karakter — HER ZAMAN geçerli, yukarıdaki talimat sadece içeriği yönlendirir.)
+
+SADECE geçerli bir JSON objesi döndür, başka hiçbir metin ekleme, dizi (array) DEĞİL tek obje döndür.
+
+GİRDİ:
+${JSON.stringify(rawRow)}`;
+}
+
+/* ---------- Shared run/stop state (used by text analysis, photo editing, and the combined runner) ---------- */
+let runStopRequested = false;
+let isRunning = false;
+
+function setGlobalRun(active, label){
+  isRunning = active;
+  $('globalRunBar').style.display = active ? 'flex' : 'none';
+  if(label) $('globalRunText').textContent = label;
+  $('globalStopBtn').disabled = false;
+  $('globalStopBtn').textContent = '⏹ Durdur';
+  ['analyzeBtn','photoEditAllBtn','fullRunBtn'].forEach(id=>{ const el = $(id); if(el) el.disabled = active; });
+}
+$('globalStopBtn').addEventListener('click', ()=>{
+  runStopRequested = true;
+  $('globalStopBtn').disabled = true;
+  $('globalStopBtn').textContent = '⏳ Durduruluyor…';
+});
+function guardNotRunning(){
+  if(isRunning){ alert('Şu anda başka bir işlem çalışıyor — önce onu durdur, sonra bunu başlat.'); return false; }
+  if(!state.products.length){ alert('Önce "İçe Aktar" sekmesinden bir dosya yükle.'); return false; }
+  if(!$('geminiKey').value.trim()){ alert('Önce "Ayarlar & AI" sekmesinden Gemini API anahtarını gir.'); goTab('settings'); return false; }
+  return true;
+}
+
+/* Runs the text-generation Gemini call for one product and mutates it in place */
+async function processProductText(p){
+  p.status = 'processing';
+  try{
+    const text = await callGeminiText(buildSingleProductPrompt(p.rawRow, p.titlePrompt, p.descPrompt, p.tagPrompt));
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    p.title = parsed.title || p.title;
+    p.description = parsed.description || '';
+    p.category = parsed.category || '';
+    p.section = parsed.section || '';
+    p.tags = (parsed.tags || '').split(',').map(t=>t.trim()).filter(Boolean);
+    p.materials = parsed.materials || '';
+    p.status = 'done';
+  }catch(err){
+    p.status = 'error';
+    p.errorMsg = err.message;
+  }
+}
+
+function setRunning(isRunning){
+  $('analyzeBtn').style.display = isRunning ? 'none' : 'inline-flex';
+  $('stopBtn').style.display = isRunning ? 'inline-flex' : 'none';
+  $('progressbarWrap').style.display = isRunning ? 'block' : 'none';
+}
+
+function updateProgress(){
+  const total = state.products.length;
+  const done = state.products.filter(p=>p.status==='done'||p.status==='error').length;
+  $('progressbar').style.width = total ? Math.round((done/total)*100)+'%' : '0%';
+}
+
+async function analyzeAll(){
+  if(!guardNotRunning()) return;
+  runStopRequested = false;
+  setRunning(true);
+  setGlobalRun(true, 'Metin üretimi başlıyor…');
+  setPill(2,'active');
+  const total = state.products.length;
+  let doneN = 0;
+  for(let i=0;i<state.products.length;i++){
+    if(runStopRequested) break;
+    const p = state.products[i];
+    if(p.status === 'done'){ doneN++; continue; } // resume: skip already-completed rows
+    renderProducts();
+    const label = `${doneN+1}/${total} ürün işleniyor (metin)…`;
+    $('analyzeStatus').textContent = label;
+    setGlobalRun(true, label);
+    await processProductText(p);
+    doneN++;
+    updateProgress();
+    renderProducts();
+    updateCurrentJob();
+  }
+  setRunning(false);
+  setGlobalRun(false);
+  const doneCount = state.products.filter(p=>p.status==='done').length;
+  const errCount = state.products.filter(p=>p.status==='error').length;
+  setPill(2, runStopRequested ? null : 'done');
+  setPill(3,'active');
+  $('analyzeStatus').textContent = runStopRequested
+    ? `Durduruldu — ${doneCount}/${total} tamamlandı`
+    : `Tamamlandı — ${doneCount}/${total}${errCount ? `, ${errCount} hata` : ''}`;
+  updateExportTab();
+}
+
+function applyDefaultsToProducts(){
+  const price = $('d_price').value, qty = $('d_qty').value, prefix = $('d_skuprefix').value;
+  state.products.forEach((p, i)=>{
+    if(!p.price) p.price = price;
+    if(!p.quantity) p.quantity = qty;
+    if(!p.sku) p.sku = prefix ? prefix + String(i+1).padStart(4,'0') : '';
+  });
+}
+$('analyzeBtn').addEventListener('click', analyzeAll);
+$('reanalyzeBtn').addEventListener('click', ()=>{
+  state.products.forEach(p=>{ p.status='pending'; p.errorMsg=''; });
+  renderProducts();
+  analyzeAll();
+});
+$('stopBtn').addEventListener('click', ()=>{
+  runStopRequested = true;
+  $('stopBtn').disabled = true;
+  $('stopBtn').textContent = '⏳ Durduruluyor…';
+});
+
+/* ---------- Regenerate title/description/tags per product ---------- */
+async function regenerateText(p, card){
+  const btn = card.querySelector('[data-regen-text]');
+  btn.disabled = true; btn.textContent = '⏳ Üretiliyor…';
+  try{
+    const prompt = `Ürün mevcut verisi: ${JSON.stringify({title:p.title, description:p.description, category:p.category, tags:p.tags.join(', ')})}
+Başlık talimatı: ${p.titlePrompt}
+Açıklama talimatı: ${p.descPrompt}
+Tag talimatı: ${p.tagPrompt}
+(Tag format kuralları — en fazla 13 tag, her biri en fazla 20 karakter — HER ZAMAN geçerli.)
+Bu talimatlara göre YENİ title, description ve tags üret. Sadece şu JSON'u döndür: {"title":"...","description":"...","tags":"virgülle ayrılmış tag listesi"}`;
+    const text = await callGeminiText(prompt);
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    p.title = parsed.title || p.title;
+    p.description = parsed.description || p.description;
+    if(parsed.tags) p.tags = parsed.tags.split(',').map(t=>t.trim()).filter(Boolean);
+    renderProducts();
+    updateCurrentJob();
+  }catch(err){
+    alert('Yeniden üretim başarısız: '+err.message);
+  }finally{
+    btn.disabled = false; btn.textContent = "↻ Başlık + açıklama + tag'leri yeniden üret";
+  }
+}
+
+/* ---------- Gemini photo editing ---------- */
+async function urlToBase64(url){
+  // Etsy's image CDN doesn't send CORS headers, so a direct browser fetch is blocked.
+  // Route through wsrv.nl, a free public image proxy that fetches server-side and
+  // serves the bytes back with proper CORS headers.
+  const proxied = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+  let res;
+  try{
+    res = await fetch(proxied);
+  }catch(e){
+    throw new Error('Kaynak görsel proxy üzerinden de indirilemedi (ağ hatası). Elle yükleyebilirsin.');
+  }
+  if(!res.ok) throw new Error('İndirilemedi (HTTP '+res.status+'). Elle yükleyebilirsin.');
+  const blob = await res.blob();
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve({ dataUrl: reader.result, mimeType: blob.type || 'image/jpeg' });
+    reader.onerror = ()=>reject(new Error('Okunamadı'));
+    reader.readAsDataURL(blob);
+  });
+}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=> resolve({ dataUrl: reader.result, mimeType: file.type || 'image/jpeg' });
+    reader.onerror = ()=>reject(new Error('Okunamadı'));
+    reader.readAsDataURL(file);
+  });
+}
+async function callGeminiEdit(base64Data, mimeType, promptText, apiKey){
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      contents:[{ parts:[ {text: promptText}, {inline_data:{mime_type:mimeType, data:base64Data}} ] }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+    })
+  });
+  if(!res.ok){
+    const errBody = await res.text().catch(()=> '');
+    throw new Error('Gemini API hata '+res.status+(errBody?': '+errBody.slice(0,220):''));
+  }
+  const data = await res.json();
+  const finishReason = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
+  const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+  const imgPart = parts.find(pp=>pp.inlineData || pp.inline_data);
+  if(!imgPart){
+    const textPart = parts.find(pp=>pp.text);
+    const detail = textPart ? textPart.text.slice(0,200) : (finishReason || 'bilinmeyen sebep');
+    throw new Error('Gemini görsel döndürmedi — ' + detail);
+  }
+  const inline = imgPart.inlineData || imgPart.inline_data;
+  const mt = inline.mimeType || inline.mime_type || 'image/png';
+  return `data:${mt};base64,${inline.data}`;
+}
+
+async function hostEditedImage(resultDataUrl){
+  // Upload happens server-side via a Netlify Function — no browser CORS/network
+  // restrictions apply since the actual request to ImgBB/catbox.moe is made
+  // from Netlify's servers, not from this page.
+  const base64Data = resultDataUrl.split(',')[1];
+  const mimeMatch = resultDataUrl.match(/^data:([^;]+);/);
+  const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+  const res = await fetch('/.netlify/functions/upload-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64Data, mimeType })
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){
+    throw new Error(data.error || ('Yükleme fonksiyonu hata verdi: '+res.status));
+  }
+  return data.url;
+}
+
+async function testUploadFunction(){
+  const resultEl = $('testUploadResult');
+  const btn = $('testUploadBtn');
+  if(btn) btn.disabled = true;
+  resultEl.innerHTML = '<span class="spin"></span> Test ediliyor…';
+  const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  try{
+    const url = await hostEditedImage(`data:image/png;base64,${tinyPng}`);
+    if(url){
+      resultEl.innerHTML = `<span style="color:var(--success);">✓ Çalışıyor! Test görseli yüklendi: <a href="${escapeHtml(url)}" target="_blank" style="color:var(--success);text-decoration:underline;">${escapeHtml(url)}</a></span>`;
+    }else{
+      resultEl.innerHTML = '<span style="color:var(--danger);">✕ Yükleme "başarılı" göründü ama bir link dönmedi (beklenmeyen yanıt).</span>';
+    }
+  }catch(err){
+    resultEl.innerHTML = `<span style="color:var(--danger);">✕ ${escapeHtml(err.message)}</span>`;
+  }
+  if(btn) btn.disabled = false;
+}
+$('testUploadBtn').addEventListener('click', testUploadFunction);
+
+async function editSlot(p, slotIdx, card, manualFile){
+  const apiKey = $('geminiKey').value.trim();
+  if(!apiKey){ alert('Önce "Ayarlar & AI" sekmesinden Gemini API anahtarını gir.'); return; }
+  p.photoStatus[slotIdx] = 'loading'; p.photoErrors[slotIdx]='';
+  renderProducts();
+  try{
+    let base64Data, mimeType;
+    if(manualFile){
+      const r = await fileToBase64(manualFile);
+      base64Data = r.dataUrl.split(',')[1]; mimeType = r.mimeType;
+    }else{
+      if(!p.sourceImageUrl) throw new Error('Kaynak görsel bulunamadı, elle yükle.');
+      const r = await urlToBase64(p.sourceImageUrl);
+      base64Data = r.dataUrl.split(',')[1]; mimeType = r.mimeType;
+    }
+    const styleInstruction = p.photoPrompts[slotIdx] || 'Bu ürün fotoğrafını profesyonel bir e-ticaret çekimi gibi iyileştir.';
+    const productLabel = (p.title || guessRawTitle(p.rawRow) || '').trim();
+    const contextLine = productLabel
+      ? `Bu fotoğraf şu ürüne ait: "${productLabel}"${p.category ? ' (Kategori: '+p.category+')' : ''}. Fotoğrafı düzenlerken ürünün ne olduğunu ve ne için kullanıldığını göz önünde bulundur, ürünle alakasız veya yanıltıcı bir sahneye dönüştürme.\n\n`
+      : '';
+    const promptText = contextLine + styleInstruction;
+    const resultDataUrl = await callGeminiEdit(base64Data, mimeType, promptText, apiKey);
+    p.editedImages[slotIdx] = resultDataUrl;
+    p.photoStatus[slotIdx] = 'done';
+    // auto-host the edited image so it becomes a real link for Vela's Photo columns
+    // (works with zero setup via catbox.moe; uses ImgBB instead if that key is filled in)
+    try{
+      const hostedUrl = await hostEditedImage(resultDataUrl);
+      if(hostedUrl) p.finalUrls[slotIdx] = hostedUrl;
+    }catch(hostErr){
+      p.photoErrors[slotIdx] = 'Görsel düzenlendi ama otomatik yükleme başarısız: '+hostErr.message+' — "İndir" ile kaydedip Final URL alanına elle ekleyebilirsin.';
+    }
+  }catch(err){
+    p.photoStatus[slotIdx] = 'error';
+    p.photoErrors[slotIdx] = err.message + (err.message.includes('Failed to fetch') ? ' — kaynak görsel CORS nedeniyle indirilemedi, aşağıdan elle yükleyebilirsin.' : '');
+  }
+  renderProducts();
+  updateCurrentJob();
+}
+
+/* ---------- Render products ---------- */
+function photoEditedCount(p){
+  // how many of this product's photo slots actually have an edited/hosted result (not just the original)
+  const photoCount = parseInt($('d_photocount').value) || 0;
+  let n = 0;
+  for(let s=0;s<photoCount;s++){ if(p.editedImages[s] || p.finalUrls[s]) n++; }
+  return n;
+}
+function updateExportTab(){
+  const n = state.products.length;
+  $('tabProductCount').textContent = n;
+  if(!n){
+    $('exportDesc').textContent = 'Henüz çıkarılmış ürün yok.';
+    $('exportPhotoSummary').textContent = '';
+    return;
+  }
+  const photoCount = parseInt($('d_photocount').value) || 0;
+  const textDone = state.products.filter(p=>p.status==='done').length;
+
+  // count individual photo SLOTS (not products) across three buckets, for a precise diagnosis
+  let hostedSlots = 0, editedNotHostedSlots = 0, untouchedSlots = 0;
+  state.products.forEach(p=>{
+    for(let s=0;s<photoCount;s++){
+      if(p.finalUrls[s]) hostedSlots++;
+      else if(p.editedImages[s]) editedNotHostedSlots++;
+      else untouchedSlots++;
+    }
+  });
+
+  const withEditedPhoto = state.products.filter(p=>photoEditedCount(p) > 0).length;
+  const noPhotoEdit = n - withEditedPhoto;
+  $('exportDesc').textContent = `${n} ürün Vela şablonuna hazır — ${textDone}/${n} metin tamamlandı.`;
+
+  if(editedNotHostedSlots > 0){
+    // photos ARE being generated but never turn into a real link — points at the upload function
+    $('exportPhotoSummary').innerHTML = `<span style="color:var(--danger);">⚠ ${editedNotHostedSlots} fotoğraf düzenlendi ama link'e dönüşmedi — yükleme fonksiyonunu <button class="btn btn-xs btn-soft" id="exportTestUploadLink" style="margin-left:4px;">şimdi test et</button></span>`;
+  }else if(noPhotoEdit > 0){
+    $('exportPhotoSummary').innerHTML = `<span style="color:var(--warning);">⚠ ${noPhotoEdit}/${n} üründe hiç foto düzenlemesi yok — bunlar için Photo 1'de orijinal Etsy fotoğrafı kullanılacak, diğer Photo kolonları boş kalacak.</span>`;
+  }else{
+    $('exportPhotoSummary').innerHTML = `<span style="color:var(--success);">✓ ${withEditedPhoto}/${n} üründe en az bir düzenlenmiş fotoğraf var, ${hostedSlots} tanesi gerçek link'e sahip.</span>`;
+  }
+  $('exportGoPhotosBtn').style.display = (noPhotoEdit > 0 || editedNotHostedSlots > 0) ? 'inline-flex' : 'none';
+  const testBtn = document.getElementById('exportTestUploadLink');
+  if(testBtn) testBtn.addEventListener('click', ()=>{ goTab('settings'); testUploadFunction(); });
+}
+
+function renderProducts(){
+  $('productsWrap').style.display = state.products.length ? 'block' : 'none';
+  $('emptyState').style.display = state.products.length ? 'none' : 'block';
+  $('productCount').textContent = state.products.length + ' ürün';
+  updateExportTab();
+  const photoCount = parseInt($('d_photocount').value);
+  const cardsEl = $('cards');
+  const openDrawers = new Set([...cardsEl.querySelectorAll('.drawer-body.open')].map(d=>d.dataset.pid));
+  cardsEl.innerHTML = '';
+  state.products.forEach(p=>{
+    const card = document.createElement('div');
+    const overall = computeOverallStatus(p, photoCount);
+    card.className = 'card' + (overall.key==='pending' ? ' is-pending' : '') + (overall.key==='error' ? ' is-error' : '');
+    const tagCountLabel = `${p.tags.length}/13`;
+    const descPlaceholder = p.status==='done' ? '' : 'AI bu alanı dolduracak…';
+    card.innerHTML = `
+      ${renderPhotoStrip(p, photoCount)}
+      <div class="body">
+          <div class="statusbanner ${overall.key}">${overall.spin ? '<span class="dotspin"></span>' : ''}<span>${overall.label}</span></div>
+          <div class="titlerow">
+            <input data-field="title" value="${escapeHtml(p.title)}" placeholder="${p.status==='done'?'':'AI başlığı üretecek…'}">
+            <span class="sectionchip">${escapeHtml(p.section||'—')}</span>
+          </div>
+          ${p.sourceEtsyLink ? `<span class="etsylink">🔗 <a href="${escapeHtml(p.sourceEtsyLink)}" target="_blank" rel="noopener">${escapeHtml(p.sourceEtsyLink)}</a></span>` : ''}
+          ${p.status==='error' ? `<div class="errtext">Hata: ${escapeHtml(p.errorMsg)} — <button class="btn btn-xs btn-soft" data-retry-row>↻ Bu ürünü tekrar dene</button></div>` : ''}
+          <div class="field" style="margin-top:10px;"><label>Description</label><textarea data-field="description" placeholder="${descPlaceholder}" style="min-height:70px;">${escapeHtml(p.description)}</textarea></div>
+          <div class="grid2">
+            <div class="field"><label>Category</label><input data-field="category" value="${escapeHtml(p.category)}"></div>
+            <div class="field"><label>Section</label><input data-field="section" value="${escapeHtml(p.section)}"></div>
+            <div class="field"><label>Materials</label><input data-field="materials" value="${escapeHtml(p.materials)}"></div>
+            <div class="field"><label>SKU</label><input data-field="sku" value="${escapeHtml(p.sku)}"></div>
+            <div class="field"><label>Price</label><input data-field="price" type="number" step="0.01" value="${escapeHtml(String(p.price))}"></div>
+            <div class="field"><label>Quantity</label><input data-field="quantity" type="number" value="${escapeHtml(String(p.quantity))}"></div>
+          </div>
+          <div class="field" style="margin-top:10px;"><label>Tags (${tagCountLabel})</label>
+            <div class="tagbar" data-tagbar></div>
+            <input placeholder="Etiket yaz, Enter'a bas" data-tag-input style="margin-top:6px;">
+          </div>
+
+          <div class="drawer">
+            <button class="drawer-toggle" data-drawer-toggle="${p.id}"><span>✦ AI prompt'ları (başlık, açıklama, tag, ${photoCount} fotoğraf)</span><span class="chev">▾</span></button>
+            <div class="drawer-body ${openDrawers.has(p.id)?'open':''}" data-pid="${p.id}">
+              <div class="promptfield">
+                <div class="plabel"><span>Başlık talimatı</span></div>
+                <textarea data-field="titlePrompt">${escapeHtml(p.titlePrompt)}</textarea>
+              </div>
+              <div class="promptfield">
+                <div class="plabel"><span>Açıklama talimatı</span></div>
+                <textarea data-field="descPrompt">${escapeHtml(p.descPrompt)}</textarea>
+              </div>
+              <div class="promptfield">
+                <div class="plabel"><span>Tag talimatı</span></div>
+                <textarea data-field="tagPrompt">${escapeHtml(p.tagPrompt)}</textarea>
+              </div>
+              <button class="btn btn-xs btn-soft" data-regen-text style="margin-bottom:14px;">↻ Başlık + açıklama + tag'leri yeniden üret</button>
+              ${Array.from({length:photoCount}).map((_,slotIdx)=>renderPhotoSlot(p, slotIdx)).join('')}
+            </div>
+          </div>
+        </div>
+    `;
+    // simple field bindings
+    card.querySelectorAll('[data-field]').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ p[inp.dataset.field] = inp.value; });
+      inp.addEventListener('change', ()=>{ updateCurrentJob(); });
+    });
+    // tags
+    renderTags(card, p);
+    const tagInput = card.querySelector('[data-tag-input]');
+    tagInput.addEventListener('keydown', e=>{
+      if(e.key==='Enter' && tagInput.value.trim()){
+        e.preventDefault(); p.tags.push(tagInput.value.trim()); tagInput.value=''; renderTags(card, p); updateCurrentJob();
+      }
+    });
+    // drawer toggle
+    const toggleBtn = card.querySelector('[data-drawer-toggle]');
+    toggleBtn.addEventListener('click', ()=>{
+      const body = card.querySelector('.drawer-body');
+      body.classList.toggle('open');
+      toggleBtn.querySelector('.chev').textContent = body.classList.contains('open') ? '▴' : '▾';
+    });
+    if(openDrawers.has(p.id)){ toggleBtn.querySelector('.chev').textContent = '▴'; }
+    // regen text
+    card.querySelector('[data-regen-text]').addEventListener('click', ()=>regenerateText(p, card));
+    // retry single row after error
+    const retryBtn = card.querySelector('[data-retry-row]');
+    if(retryBtn) retryBtn.addEventListener('click', async ()=>{
+      p.errorMsg=''; renderProducts();
+      await processProductText(p);
+      renderProducts();
+      updateCurrentJob();
+    });
+    // photo slots
+    for(let slotIdx=0; slotIdx<photoCount; slotIdx++) bindPhotoSlot(card, p, slotIdx);
+    // copy-link chips in the top photo strip
+    card.querySelectorAll('[data-copy-link]').forEach(btn=>{
+      const s = parseInt(btn.dataset.copyLink);
+      btn.addEventListener('click', async ()=>{
+        const url = p.finalUrls[s];
+        if(!url) return;
+        try{
+          await navigator.clipboard.writeText(url);
+          const original = btn.textContent;
+          btn.textContent = '✓ Kopyalandı';
+          setTimeout(()=>{ btn.textContent = original; }, 1500);
+        }catch(e){
+          prompt('Linki manuel kopyala:', url);
+        }
+      });
+    });
+
+    cardsEl.appendChild(card);
+  });
+}
+
+/* A slot is only truly done if it has actual image data — not just a 'done' status flag.
+   This guards against corrupted/stale state (e.g. from a trimmed job-history record) where
+   photoStatus says 'done' but no editedImages/finalUrls exist — which would otherwise get
+   permanently skipped by "already done" resume logic and never retried. Self-heals by
+   resetting the status back to null (pending) whenever it catches this mismatch. */
+function isPhotoSlotDone(p, s){
+  const hasData = !!(p.editedImages[s] || p.finalUrls[s]);
+  if(p.photoStatus[s] === 'done' && !hasData){
+    p.photoStatus[s] = null; // self-heal: force a retry instead of skipping forever
+  }
+  return p.photoStatus[s] === 'done' && hasData;
+}
+
+/* Combines text-generation status with photo-editing completeness into one banner-ready status */
+function computeOverallStatus(p, photoCount){
+  if(p.status === 'error') return { key:'error', label:'✕ Hata — metin üretilemedi', spin:false };
+  if(p.status === 'processing') return { key:'processing', label:'İşleniyor… (metin)', spin:true };
+  if(p.status === 'pending') return { key:'pending', label:'● Bekliyor', spin:false };
+  // text status is 'done' from here on — now factor in photos
+  if(photoCount === 0) return { key:'done', label:'✓ Hazır', spin:false };
+  let doneN = 0, loading = false;
+  for(let s=0;s<photoCount;s++){
+    if(isPhotoSlotDone(p, s)) doneN++;
+    else if(p.photoStatus[s] === 'loading') loading = true;
+  }
+  if(doneN === photoCount) return { key:'done', label:'✓ Hazır — metin + tüm fotoğraflar tamam', spin:false };
+  if(loading) return { key:'processing', label:`Fotoğraf düzenleniyor… (${doneN}/${photoCount})`, spin:true };
+  return { key:'partial', label:`Metin hazır · Foto ${doneN}/${photoCount} — henüz tamamlanmadı`, spin:false };
+}
+
+function renderPhotoStrip(p, photoCount){
+  const origImg = p.sourceImageUrl
+    ? `<img src="${escapeHtml(p.sourceImageUrl)}" loading="lazy">`
+    : `<span class="ph2">Görsel<br>bulunamadı</span>`;
+  let html = `<div class="photostrip">
+    <div class="photostrip-item">
+      <div class="photostrip-label orig">Orijinal</div>
+      <div class="photostrip-img${p.sourceImageUrl?'':' empty'}">${origImg}</div>
+    </div>`;
+  for(let s=0;s<photoCount;s++){
+    const done = isPhotoSlotDone(p, s);
+    const status = p.photoStatus[s];
+    const img = p.editedImages[s] || p.finalUrls[s] || null;
+    let inner = `<span class="ph2">henüz<br>yok</span>`;
+    let empty = true;
+    if(status==='loading'){ inner = `<span class="spin"></span>`; empty = false; }
+    if(img){ inner = `<img src="${img}">`; empty = false; }
+    let linkRow = '';
+    if(p.finalUrls[s]){
+      linkRow = `<button class="photostrip-link" data-copy-link="${s}" title="${escapeHtml(p.finalUrls[s])}">🔗 Linki kopyala</button>`;
+    }else if(p.editedImages[s]){
+      linkRow = `<div class="photostrip-nolink">Link yok</div>`;
+    }
+    html += `
+    <div class="photostrip-arrow">→</div>
+    <div class="photostrip-item">
+      <div class="photostrip-label${done?' done-label':''}">Fotoğraf ${s+1}${done?' ✓':''}</div>
+      <div class="photostrip-img${empty?' empty':''}">${inner}</div>
+      ${linkRow}
+    </div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderPhotoSlot(p, slotIdx){
+  const status = p.photoStatus[slotIdx];
+  const result = p.editedImages[slotIdx] || p.finalUrls[slotIdx] || null;
+  let resultHtml = `<span class="ph">henüz<br>yok</span>`;
+  if(status==='loading') resultHtml = `<span class="spin"></span>`;
+  if(result) resultHtml = `<img src="${result}">`;
+  return `
+    <div class="photoslot" data-slot="${slotIdx}">
+      <div class="photoslot-head"><span>Fotoğraf ${slotIdx+1} prompt'u</span></div>
+      <div class="photoslot-body">
+        <div>
+          <textarea data-photo-prompt="${slotIdx}" placeholder="örn. Beyaz stüdyo zemininde, yumuşak gölgeli ürün çekimi">${escapeHtml(p.photoPrompts[slotIdx]||'')}</textarea>
+          <div class="photoslot-actions">
+            <button class="btn btn-xs btn-primary" data-edit-slot="${slotIdx}" ${status==='loading'?'disabled':''}>🎨 Gemini ile düzenle</button>
+            ${p.editedImages[slotIdx] ? `<a class="btn btn-xs btn-ghost" download="foto-${p.id}-${slotIdx+1}.png" href="${p.editedImages[slotIdx]}">⬇ İndir</a>` : ''}
+          </div>
+          ${status==='error' ? `<div class="errtext">${escapeHtml(p.photoErrors[slotIdx])}</div>` : ''}
+          <div class="manualupload">Otomatik indirme başarısız olursa: <label>görseli elle yükle<input type="file" accept="image/*" data-manual-upload="${slotIdx}" style="display:none;"></label></div>
+          <div class="field" style="margin-top:8px;"><label>Final URL (host'una yükledikten sonra buraya yapıştır)</label>
+            <input data-final-url="${slotIdx}" value="${escapeHtml(p.finalUrls[slotIdx]||'')}" placeholder="https://...">
+          </div>
+        </div>
+        <div class="photoresult">${resultHtml}</div>
+      </div>
+    </div>
+  `;
+}
+
+function bindPhotoSlot(card, p, slotIdx){
+  const promptTa = card.querySelector(`[data-photo-prompt="${slotIdx}"]`);
+  if(promptTa){
+    promptTa.addEventListener('input', ()=>{ p.photoPrompts[slotIdx] = promptTa.value; });
+    promptTa.addEventListener('change', ()=>{ updateCurrentJob(); });
+  }
+  const finalUrlInp = card.querySelector(`[data-final-url="${slotIdx}"]`);
+  if(finalUrlInp){
+    finalUrlInp.addEventListener('input', ()=>{ p.finalUrls[slotIdx] = finalUrlInp.value; });
+    finalUrlInp.addEventListener('change', ()=>{ updateCurrentJob(); });
+  }
+  const editBtn = card.querySelector(`[data-edit-slot="${slotIdx}"]`);
+  if(editBtn) editBtn.addEventListener('click', ()=> editSlot(p, slotIdx, card, null));
+  const manualInp = card.querySelector(`[data-manual-upload="${slotIdx}"]`);
+  if(manualInp) manualInp.addEventListener('change', ()=>{
+    if(manualInp.files.length) editSlot(p, slotIdx, card, manualInp.files[0]);
+  });
+}
+
+function renderTags(card, p){
+  const bar = card.querySelector('[data-tagbar]');
+  bar.innerHTML = '';
+  p.tags.forEach((t, i)=>{
+    const bad = t.length > 20;
+    const chip = document.createElement('span');
+    chip.className = 'tagitem' + (bad ? ' bad' : '');
+    chip.innerHTML = `${escapeHtml(t)} <button data-i="${i}">✕</button>`;
+    chip.querySelector('button').addEventListener('click', ()=>{ p.tags.splice(i,1); renderTags(card, p); });
+    bar.appendChild(chip);
+  });
+}
+
+/* ---------- Photo count change re-renders slots ---------- */
+function syncPhotoPromptFieldsVisibility(){
+  const count = parseInt($('d_photocount').value);
+  for(let i=0;i<3;i++){
+    const wrap = document.querySelector(`[data-photoprompt-field="${i}"]`);
+    if(wrap) wrap.style.display = i < count ? 'block' : 'none';
+  }
+}
+$('d_photocount').addEventListener('change', ()=>{ renderProducts(); syncPhotoPromptFieldsVisibility(); });
+
+/* ---------- Bulk photo editing (applies global prompts to every product) ---------- */
+function setPhotoRunning(isRunning){
+  $('photoEditAllBtn').style.display = isRunning ? 'none' : 'inline-flex';
+  $('photoStopBtn').style.display = isRunning ? 'inline-flex' : 'none';
+  $('photoProgressbarWrap').style.display = isRunning ? 'block' : 'none';
+}
+async function runAllPhotoEdits(){
+  if(!guardNotRunning()) return;
+  const photoCount = parseInt($('d_photocount').value);
+  const globalPrompts = Array.from({length:photoCount}, (_,i)=> ($('d_photoprompt_'+i) ? $('d_photoprompt_'+i).value : ''));
+  // apply the general prompts to every product's matching slot before running
+  state.products.forEach(p=>{
+    for(let s=0;s<photoCount;s++) p.photoPrompts[s] = globalPrompts[s];
+  });
+  renderProducts();
+
+  const tasks = [];
+  state.products.forEach(p=>{
+    for(let s=0;s<photoCount;s++){
+      if(!isPhotoSlotDone(p, s)) tasks.push({p, s});
+    }
+  });
+  if(!tasks.length){ alert('Düzenlenecek foto kalmamış — hepsi zaten "Hazır" durumda.'); return; }
+
+  runStopRequested = false;
+  setPhotoRunning(true);
+  setGlobalRun(true, 'Foto düzenleme başlıyor…');
+  const total = tasks.length;
+  let doneCount = 0;
+  for(const {p, s} of tasks){
+    if(runStopRequested) break;
+    const label = `${doneCount+1}/${total} fotoğraf işleniyor…`;
+    $('photoEditStatus').textContent = label;
+    setGlobalRun(true, label);
+    await editSlot(p, s, null, null);
+    doneCount++;
+    $('photoProgressbar').style.width = Math.round((doneCount/total)*100)+'%';
+  }
+  setPhotoRunning(false);
+  setGlobalRun(false);
+  $('photoEditStatus').textContent = runStopRequested
+    ? `Durduruldu — ${doneCount}/${total} tamamlandı`
+    : `Tamamlandı — ${doneCount}/${total}`;
+}
+$('photoEditAllBtn').addEventListener('click', runAllPhotoEdits);
+$('photoStopBtn').addEventListener('click', ()=>{
+  runStopRequested = true;
+  $('photoStopBtn').disabled = true;
+  $('photoStopBtn').textContent = '⏳ Durduruluyor…';
+});
+
+/* ---------- Combined pipeline: text for every product, then photos for every product ---------- */
+function setFullRunning(isRunning){
+  $('fullRunBtn').style.display = isRunning ? 'none' : 'inline-flex';
+  $('fullStopBtn').style.display = isRunning ? 'inline-flex' : 'none';
+  $('fullProgressbarWrap').style.display = isRunning ? 'block' : 'none';
+}
+async function runFullPipeline(){
+  if(!guardNotRunning()) return;
+  runStopRequested = false;
+  setFullRunning(true);
+  setGlobalRun(true, 'Başlıyor…');
+  setPill(2,'active');
+
+  const photoCount = parseInt($('d_photocount').value);
+  const globalPrompts = Array.from({length:photoCount}, (_,i)=> ($('d_photoprompt_'+i) ? $('d_photoprompt_'+i).value : ''));
+  state.products.forEach(p=>{ for(let s=0;s<photoCount;s++) p.photoPrompts[s] = globalPrompts[s]; });
+
+  // total work = 1 "text" step per not-yet-done product + 1 step per not-yet-done photo slot
+  let grandTotal = 0;
+  state.products.forEach(p=>{
+    if(p.status !== 'done') grandTotal++;
+    for(let s=0;s<photoCount;s++){ if(!isPhotoSlotDone(p, s)) grandTotal++; }
+  });
+  let doneSteps = 0;
+  let productsFullyDone = 0;
+  const totalProducts = state.products.length;
+
+  productLoop:
+  for(const p of state.products){
+    if(runStopRequested) break;
+
+    // step 1 for this product: text (title/description/category/tags)
+    if(p.status !== 'done'){
+      renderProducts();
+      const label = `Ürün ${productsFullyDone+1}/${totalProducts} — metin üretiliyor…`;
+      $('fullRunStatus').textContent = label;
+      setGlobalRun(true, label);
+      try{
+        await processProductText(p);
+      }catch(err){
+        console.error('Beklenmeyen hata (metin):', err);
+        p.status = 'error';
+        p.errorMsg = err.message || 'Bilinmeyen hata';
+      }
+      doneSteps++;
+      renderProducts();
+      updateCurrentJob();
+      $('fullProgressbar').style.width = grandTotal ? Math.round((doneSteps/grandTotal)*100)+'%' : '0%';
+    }
+    if(runStopRequested) break;
+
+    // step 2 for this product: every photo slot, one by one
+    for(let s=0;s<photoCount;s++){
+      if(runStopRequested) break productLoop;
+      if(isPhotoSlotDone(p, s)) continue;
+      const label = `Ürün ${productsFullyDone+1}/${totalProducts} — fotoğraf ${s+1}/${photoCount} düzenleniyor…`;
+      $('fullRunStatus').textContent = label;
+      setGlobalRun(true, label);
+      try{
+        await editSlot(p, s, null, null);
+      }catch(err){
+        // editSlot already catches its own errors internally, but guard here too
+        // in case something unexpected (e.g. a render exception) escapes it.
+        console.error('Beklenmeyen hata (foto):', err);
+        p.photoStatus[s] = 'error';
+        p.photoErrors[s] = err.message || 'Bilinmeyen hata';
+        renderProducts();
+      }
+      doneSteps++;
+      $('fullProgressbar').style.width = grandTotal ? Math.round((doneSteps/grandTotal)*100)+'%' : '0%';
+    }
+
+    productsFullyDone++;
+    updateCurrentJob();
+  }
+
+  setFullRunning(false);
+  setGlobalRun(false);
+  setPill(2, runStopRequested ? null : 'done');
+  setPill(3, runStopRequested ? null : 'done');
+  $('fullRunStatus').textContent = runStopRequested
+    ? `Durduruldu — ${productsFullyDone}/${totalProducts} ürün tamamen bitti`
+    : `Tamamlandı — ${productsFullyDone}/${totalProducts} ürün`;
+  updateExportTab();
+}
+$('fullRunBtn').addEventListener('click', runFullPipeline);
+$('fullStopBtn').addEventListener('click', ()=>{
+  runStopRequested = true;
+  $('fullStopBtn').disabled = true;
+  $('fullStopBtn').textContent = '⏳ Durduruluyor…';
+});
+
+
+/* ---------- Export ---------- */
+$('exportGoPhotosBtn').addEventListener('click', ()=>{ goTab('products'); });
+
+$('exportBtn').addEventListener('click', ()=>{
+  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
+  const noPhotoEdit = state.products.filter(p=>photoEditedCount(p)===0).length;
+  if(noPhotoEdit > 0){
+    const total = state.products.length;
+    const proceed = confirm(
+      `${noPhotoEdit}/${total} üründe hiç foto düzenlemesi yapılmamış — bu ürünler için Photo 1'de sadece orijinal Etsy fotoğrafı olacak, diğer Photo kolonları boş kalacak.\n\n` +
+      `Yine de bu şekilde indirmek istiyor musun?\n\n` +
+      `"Tamam" — böyle indir\n"İptal" — önce "Ürünler" sekmesinden fotoğrafları düzenleyeyim`
+    );
+    if(!proceed) return;
+  }
+  const defaults = {
+    whomade: $('d_whomade').value, whatisit: $('d_whatisit').value, whenmade: $('d_whenmade').value,
+    renewal: $('d_renewal').value, producttype: $('d_producttype').value, prodpartner: $('d_prodpartner').value,
+    shipping: $('d_shipping').value, returnpolicy: $('d_return').value
+  };
+  const aoa = [VELA_HEADERS];
+  state.products.forEach(p=>{
+    const photo1 = p.finalUrls[0] || p.sourceImageUrl || '';
+    const photo2 = p.finalUrls[1] || '';
+    const photo3 = p.finalUrls[2] || '';
+    aoa.push([
+      p.title, p.description, p.category,
+      defaults.whomade, defaults.whatisit, defaults.whenmade, defaults.renewal, defaults.producttype,
+      p.tags.join(', '), p.materials, defaults.prodpartner, p.section,
+      p.price || '', p.quantity || '', p.sku || '',
+      '','','','','','','','','',
+      defaults.shipping, '', '', '', '',
+      defaults.returnpolicy,
+      photo1, photo2, photo3, '', '', '', '', '', '', '',
+      '', '', '', '', '', ''
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = VELA_HEADERS.map(()=>({wch:18}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vela Template');
+  XLSX.writeFile(wb, 'vela-export.xlsx');
+  setPill(4,'done');
+  updateCurrentJob();
+});
+
+['d_price','d_qty','d_skuprefix'].forEach(id=>{
+  $(id).addEventListener('change', ()=>{ applyDefaultsToProducts(); renderProducts(); updateCurrentJob(); });
+});
+
+/* ---------- Init ---------- */
+renderHistoryList();
+syncPhotoPromptFieldsVisibility();
+</script>
+</body>
+</html>
