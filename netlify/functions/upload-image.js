@@ -9,6 +9,7 @@ exports.handler = async (event) => {
     }
 
     const imgbbKey = process.env.IMGBB_API_KEY;
+    let imgbbFailReason = null;
 
     // Try ImgBB first if a key is configured server-side
     if (imgbbKey) {
@@ -27,11 +28,17 @@ exports.handler = async (event) => {
           if (url) {
             return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, provider: 'imgbb' }) };
           }
+          imgbbFailReason = 'ImgBB "success" dedi ama url dönmedi: ' + rawText.slice(0, 150);
+        } else {
+          imgbbFailReason = 'ImgBB HTTP ' + res.status + ': ' + ((data.error && data.error.message) || rawText.slice(0, 150));
         }
         // fall through to catbox.moe below if ImgBB didn't return a usable url
       } catch (imgbbErr) {
+        imgbbFailReason = 'ImgBB ağ hatası: ' + imgbbErr.message;
         // network-level failure on ImgBB — fall through to catbox.moe
       }
+    } else {
+      imgbbFailReason = 'IMGBB_API_KEY ayarlanmamış';
     }
 
     // Default / fallback: catbox.moe, no key needed
@@ -51,9 +58,10 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 502,
-      body: JSON.stringify({ error: 'Hem ImgBB hem catbox.moe yüklemesi başarısız oldu: ' + catboxText.slice(0, 200) })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: `Hem ImgBB (${imgbbFailReason}) hem catbox.moe (${catboxText.slice(0, 150)}) yüklemesi başarısız oldu.` })
     };
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return { statusCode: 500, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: err.message }) };
   }
 };
