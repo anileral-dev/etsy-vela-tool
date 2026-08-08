@@ -342,7 +342,7 @@ td{color:var(--text-2);}
 
     <div class="panel">
       <h2>Fotoğraf host'u</h2>
-      <p class="desc">Gemini'nin düzenlediği fotoğraflar veri olarak dönüyor; Vela gerçek bir link istiyor. Bu artık <b>sunucu tarafında</b> (Netlify Function üzerinden) otomatik yükleniyor — tarayıcı/ağ engelleri (CORS, reklam engelleyici, ISP filtresi vb.) devre dışı, çünkü istek senin tarayıcından değil Netlify'ın kendi sunucusundan gidiyor. Anahtar/anahtarsız fark etmeden, hiçbir ayar yapmana gerek yok.</p>
+      <p class="desc">Gemini'nin düzenlediği fotoğraflar veri olarak dönüyor; Vela gerçek bir link istiyor. Bu artık <b>kendi sitende</b> (Netlify Blobs üzerinde) otomatik depolanıp senin domain'inden (<span class="mono">.../.netlify/functions/serve-image?id=...</span>) bir link olarak dönüyor — üçüncü bir servise (ImgBB, catbox vb.) hiç bağımlı değil, tarayıcı/ağ engelleri de devreye girmiyor. Hiçbir ayar yapmana gerek yok.</p>
       <button class="btn btn-ghost btn-sm" id="testUploadBtn">🔎 Yükleme fonksiyonunu test et</button>
       <span id="testUploadResult" class="mono" style="margin-left:10px;font-size:12px;"></span>
     </div>
@@ -473,7 +473,7 @@ td{color:var(--text-2);}
       <button class="btn btn-primary" id="exportBtn">⬇ .xlsx olarak indir</button>
       <button class="btn btn-ghost" id="exportGoPhotosBtn" style="display:none;">🎨 Önce fotoğrafları düzenle</button>
       <div class="notice info" style="margin-top:14px;">
-        Düzenlenen fotoğraflar artık otomatik olarak (varsayılan: catbox.moe, ya da girdiysen ImgBB) yüklenip linki buraya düşer, elle bir şey yapman gerekmez. Boş kalan slotlar (hiç düzenlenmemişse) orijinal Etsy görselinin linkini kullanır.
+        Düzenlenen fotoğraflar artık otomatik olarak (kendi sitenin sunucusunda, Netlify Blobs üzerinden) yüklenip linki buraya düşer, elle bir şey yapman gerekmez. Boş kalan slotlar (hiç düzenlenmemişse) orijinal Etsy görselinin linkini kullanır.
       </div>
     </div>
   </div>
@@ -1024,9 +1024,9 @@ async function callGeminiEdit(base64Data, mimeType, promptText, apiKey){
 }
 
 async function hostEditedImage(resultDataUrl){
-  // Upload happens server-side via a Netlify Function — no browser CORS/network
-  // restrictions apply since the actual request to ImgBB/catbox.moe is made
-  // from Netlify's servers, not from this page.
+  // Upload happens server-side via a Netlify Function into Netlify Blobs —
+  // the photo ends up hosted on this site's own domain, served back by
+  // /.netlify/functions/serve-image.
   const base64Data = resultDataUrl.split(',')[1];
   const mimeMatch = resultDataUrl.match(/^data:([^;]+);/);
   const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
@@ -1343,7 +1343,7 @@ function renderPhotoSlot(p, slotIdx){
             <button class="btn btn-xs btn-primary" data-edit-slot="${slotIdx}" ${status==='loading'?'disabled':''}>🎨 Gemini ile düzenle</button>
             ${p.editedImages[slotIdx] ? `<a class="btn btn-xs btn-ghost" download="foto-${p.id}-${slotIdx+1}.png" href="${p.editedImages[slotIdx]}">⬇ İndir</a>` : ''}
           </div>
-          ${status==='error' ? `<div class="errtext">${escapeHtml(p.photoErrors[slotIdx])}</div>` : ''}
+          ${p.photoErrors[slotIdx] ? `<div class="errtext">${escapeHtml(p.photoErrors[slotIdx])}</div>` : ''}
           <div class="manualupload">Otomatik indirme başarısız olursa: <label>görseli elle yükle<input type="file" accept="image/*" data-manual-upload="${slotIdx}" style="display:none;"></label></div>
           <div class="field" style="margin-top:8px;"><label>Final URL (host'una yükledikten sonra buraya yapıştır)</label>
             <input data-final-url="${slotIdx}" value="${escapeHtml(p.finalUrls[slotIdx]||'')}" placeholder="https://...">
@@ -1509,8 +1509,6 @@ async function runFullPipeline(){
       try{
         await editSlot(p, s, null, null);
       }catch(err){
-        // editSlot already catches its own errors internally, but guard here too
-        // in case something unexpected (e.g. a render exception) escapes it.
         console.error('Beklenmeyen hata (foto):', err);
         p.photoStatus[s] = 'error';
         p.photoErrors[s] = err.message || 'Bilinmeyen hata';
