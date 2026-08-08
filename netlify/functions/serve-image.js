@@ -6,7 +6,11 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: 'id gerekli' };
   }
   try {
-    const store = getStore('etsy-vela-photos');
+    const store = getStore({
+      name: 'etsy-vela-photos',
+      siteID: process.env.BLOBS_SITE_ID,
+      token: process.env.BLOBS_TOKEN
+    });
     const arrayBuffer = await store.get(id, { type: 'arrayBuffer' });
     if (!arrayBuffer) {
       return { statusCode: 404, body: 'Görsel bulunamadı' };
