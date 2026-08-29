@@ -1,16 +1,13 @@
-const { getStore } = require('@netlify/blobs');
+const { connectLambda, getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
+  connectLambda(event);
   const id = event.queryStringParameters && event.queryStringParameters.id;
   if (!id) {
     return { statusCode: 400, body: 'id gerekli' };
   }
   try {
-    const store = getStore({
-      name: 'etsy-vela-photos',
-      siteID: process.env.BLOBS_SITE_ID,
-      token: process.env.BLOBS_TOKEN
-    });
+    const store = getStore('etsy-vela-photos');
     const arrayBuffer = await store.get(id, { type: 'arrayBuffer' });
     if (!arrayBuffer) {
       return { statusCode: 404, body: 'Görsel bulunamadı' };
