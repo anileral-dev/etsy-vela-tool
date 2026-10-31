@@ -2,10 +2,12 @@ const { connectLambda, getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
   connectLambda(event);
-  const id = event.queryStringParameters && event.queryStringParameters.id;
+  let id = event.queryStringParameters && event.queryStringParameters.id;
   if (!id) {
     return { statusCode: 400, body: 'id gerekli' };
   }
+  // /img/<id>.png gibi uzantılı yoldan geliyorsa uzantıyı at (Vela linkin .png/.jpg ile bitmesini ister)
+  id = id.replace(/\.(png|jpe?g|webp|gif)$/i, '');
   try {
     const store = getStore('etsy-vela-photos');
     const arrayBuffer = await store.get(id, { type: 'arrayBuffer' });
