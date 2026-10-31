@@ -418,7 +418,7 @@ td{color:var(--text-2);}
 
     <div class="panel">
       <h2>Fotoğraf stili</h2>
-      <p class="desc">Varsayılan olarak her şeyi AI yapar: ürüne bakıp evde kolayca kurulabilecek <b>sade bir zemin ve fon</b> seçer (beyaz/krem karton, düz duvar, açık renk ahşap masa, keten kumaş gibi). Fotoğrafa <b>hiç obje eklenmez</b>. Aynı ürünün tüm fotoğrafları aynı zemin ve fonu kullanır; Foto 1 ana çekim, diğer fotoğraflar, seçtiğin fotoğraf sayısına göre (en fazla 10) birbirinden farklı açı ve duruşlarla çekilir; ürün her zaman tam görünür, aşırı yakın çekim yapılmaz. İstersen sabit bir stüdyo fonu, kendi arka plan görselini ya da kendi prompt'unu seçebilirsin. Kalite kuralları her fotoğrafa otomatik eklenir: eklenen yazı/logo/filigran yok, ürün aynen korunur, sadece hafif rötuş.</p>
+      <p class="desc"><b>1) Ana prompt:</b> ürünün koyulacağı zemini ve arka fonu sen yazarsın (tüm ürünlere ve tüm fotoğraflara aynı uygulanır). <b>2) Diğer fotoğraflar:</b> AI, Foto 1'i referans alıp <b>aynı zemin ve arka fonda sadece çekim açısını ve ürünün duruşunu</b> değiştirerek yeni fotoğraflar üretir (en fazla 10). Fotoğrafa obje eklenmez, aşırı yakın çekim yapılmaz, ürün her zaman tam görünür. Kalite kuralları her fotoğrafa otomatik eklenir: eklenen yazı/logo/filigran yok, ürün aynen korunur, sadece hafif rötuş. İstersen prompt yazmak yerine "AI seçsin", sabit stüdyo fonu ya da kendi arka plan görselini de seçebilirsin.</p>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
         <div class="field">
           <label>Ürün başına fotoğraf sayısı</label>
@@ -426,12 +426,21 @@ td{color:var(--text-2);}
           <span class="hint">En fazla 10 (Etsy ve Vela sınırı). Her fotoğraf ayrı bir Gemini çağrısıdır: sayı arttıkça süre ve kullanım artar. AI açıları sayıya göre dağıtır; hiçbiri birbirinin tekrarı olmaz.</span>
         </div>
         <div class="field">
-          <label>Arka plan / zemin</label>
+          <label>Görsel modeli (fiyat farkı var)</label>
+          <select id="d_imgmodel">
+            <option value="gemini-3.1-flash-image" selected>gemini-3.1-flash-image — şu anki (≈ $0.067 / foto)</option>
+            <option value="gemini-nano-banana-2.1">gemini-nano-banana-2.1 — yarı fiyat (≈ $0.034 / foto), daha yeni</option>
+            <option value="gemini-3.1-flash-lite-image">gemini-3.1-flash-lite-image — yarı fiyat (≈ $0.034 / foto), en hızlı</option>
+          </select>
+          <span class="hint" id="imgCostHint"></span>
+        </div>
+        <div class="field">
+          <label>Zemin + arka fon</label>
           <select id="d_scene">
-            <option value="lifestyle">Sade ev fonu — AI basit zemin ve fon seçer (önerilen)</option>
+            <option value="custom-text" selected>Ana prompt'umu ben yazacağım (önerilen)</option>
+            <option value="lifestyle">AI seçsin — sade ev zemini ve fonu</option>
             <option value="studio-white">Temiz beyaz stüdyo (sabit fon)</option>
             <option value="custom-image">Kendi arka plan görselim (yükle)</option>
-            <option value="custom-text">Kendi prompt'um (yazıyla tarif)</option>
           </select>
         </div>
         <div class="field">
@@ -457,9 +466,9 @@ td{color:var(--text-2);}
       </div>
 
       <div id="sceneCustomTextBox" class="field" style="display:none;margin-top:12px;">
-        <label>Arka plan / sahne tarifi (tüm ürünlere aynı uygulanır)</label>
-        <textarea id="d_scenetext" style="min-height:64px;" placeholder="örn. Açık renk ahşap masa üstü, bulanık sıcak tonlu arka plan, yumuşak pencere ışığı"></textarea>
-        <span class="hint">Not: sadece yazıyla tarif edilen sahne her seferinde biraz farklı çıkabilir. Tutarlılık için hazır bir arka plan ya da görsel yüklemek daha güvenlidir.</span>
+        <label>Ana prompt — ürünün koyulacağı zemin ve arka fon (tüm fotoğraflara ve tüm ürünlere aynı uygulanır)</label>
+        <textarea id="d_scenetext" style="min-height:72px;" placeholder="örn. Düz beyaz karton zemin, arkada düz açık gri duvar, yumuşak pencere ışığı"></textarea>
+        <span class="hint">Sadece zemini ve arka fonu tarif et; ürünü, açıları ve duruşu AI halleder. Foto 1 bu tarife göre çekilir. Foto 2, 3, 4… Foto 1'i referans alır ve aynı zemin ve fonda sadece çekim açısını ve ürünün duruşunu değiştirir. Aynı ana prompt'u tüm mağazalarında kullanırsan hepsinde benzer görünüm çıkar (Mağaza profili ile kaydedebilirsin). Yazıyla tarif edilen zemin Foto 1'de biraz farklı çıkabilir; birebir aynı fon istersen "Kendi arka plan görselim"i seç.</span>
       </div>
 
       <div id="angleCustomBox" style="display:none;margin-top:14px;">
@@ -507,7 +516,7 @@ td{color:var(--text-2);}
 
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:12.5px;color:var(--text-2);cursor:pointer;max-width:640px;">
         <input type="checkbox" id="d_ref1" checked style="margin-top:2px;">
-        <span>Foto 2 ve sonrakileri üretirken Foto 1'i de referans ver <b>(önerilen)</b> — aynı ürünün fotoğrafları aynı yüzeyde, ışıkta ve tonda olur. Fotoğraflar sırayla, Foto 1'den sonra üretilir.</span>
+        <span>Foto 2 ve sonrakileri üretirken Foto 1'i de referans ver <b>(önerilen)</b> — aynı zemin, fon ve ışık korunur, sadece açı ve duruş değişir. Fotoğraflar sırayla, Foto 1'den sonra üretilir; Foto 1 hazır değilse diğerleri atlanır.</span>
       </label>
     </div>
 
@@ -1363,16 +1372,16 @@ const PHOTO_SCENES = {
 };
 /* Otomatik açılar: ürün başına seçilen fotoğraf sayısı kadar, her biri öncekilerden farklı. Hepsi orta/biraz uzak mesafe, ürün tam kadrajda. */
 const ANGLE_POOL = [
-  { label:'front main view', text:'MAIN LISTING PHOTO (medium distance): the product as the clear hero, fully visible, shown from its most attractive natural angle (usually front or slightly three-quarter) and centered on the plain surface.' },
+  { label:'front main view', text:'MAIN LISTING PHOTO (medium distance): the product in its most natural display position, the clear hero, fully visible, shown from its most attractive natural angle (usually front or slightly three-quarter) and centered.' },
   { label:'three-quarter view from slightly above', text:'THREE-QUARTER VIEW: camera slightly above the product and rotated about 35-45 degrees to one side, same medium distance, the whole product in frame.' },
-  { label:'top-down flat lay', text:'TOP-DOWN VIEW (flat lay): camera directly above, looking straight down, the whole product centered with comfortable plain surface around it.' },
-  { label:'low side view', text:'LOW SIDE VIEW: camera low, close to surface level, looking at the whole product from the side.' },
+  { label:'top-down flat lay', text:'TOP-DOWN VIEW (flat lay): camera directly above, looking straight down; the product lying flat (laid down naturally) and centered with comfortable empty surface around it.' },
+  { label:'low side view', text:'LOW SIDE VIEW: camera low, close to surface level, looking at the whole product from the side; the product standing upright or resting naturally.' },
   { label:'three-quarter view from the opposite side', text:'OPPOSITE THREE-QUARTER VIEW: like a three-quarter view but from the opposite side of the product, camera slightly above.' },
-  { label:'farther straight-on view', text:'FARTHER FRONT VIEW: camera a little farther away, straight on, the product somewhat smaller in the frame with generous plain surface around it.' },
-  { label:'steep high angle', text:'HIGH ANGLE: camera high above at roughly 60 degrees looking down toward the whole product.' },
-  { label:'side-on pose', text:'SIDE-ON POSE: the product turned about 90 degrees on the surface and seen from slightly above.' },
+  { label:'farther straight-on view', text:'FARTHER FRONT VIEW: camera a little farther away, straight on, the product somewhat smaller in the frame with generous empty surface around it.' },
+  { label:'steep high angle', text:'HIGH ANGLE: camera high above at roughly 60 degrees looking down toward the whole product, which is slightly turned or tilted.' },
+  { label:'side-on pose', text:'SIDE-ON POSE: the product turned about 90 degrees on the surface to show its side, seen from slightly above.' },
   { label:'diagonal flat lay', text:'DIAGONAL FLAT LAY: seen from above with the product rotated about 45 degrees in the frame.' },
-  { label:'far low three-quarter view', text:'FAR LOW THREE-QUARTER VIEW: camera farther away and low, three-quarter view, with plenty of plain surface around the product.' }
+  { label:'far low three-quarter view', text:'FAR LOW THREE-QUARTER VIEW: camera farther away and low, three-quarter view, with plenty of empty surface around the product.' }
 ];
 const SCENE_IMG_KEY = 'etsy_vela_scene_image_v1';
 let sceneCustomImage = '';
@@ -1430,8 +1439,8 @@ function resolveScene(){
     return { text: '', backdrop: bd };
   }
   const t = ($('d_scenetext').value || '').trim();
-  if(!t) throw new Error('Sahne tarifi boş — "Ayarlar & AI → Fotoğraf stili" bölümüne yaz ya da hazır bir arka plan seç.');
-  return { text: t, backdrop: null };
+  if(!t) throw new Error('Ana prompt boş — "Ayarlar & AI → Fotoğraf stili" bölümüne zemin ve arka fonu yaz, ya da "AI seçsin" / hazır bir arka plan seç.');
+  return { text: t, backdrop: null, custom: true };
 }
 /* Bu fotoğrafın açısı: ürüne özel yazıldıysa o; yoksa "kendim yazacağım" modundaki genel; yoksa otomatik */
 function angleInfo(p, s){
@@ -1489,6 +1498,8 @@ function buildPhotoPrompt(p, slotIdx, scene, hasAnchor, total){
   if(scene.backdrop) L.push(`Image ${idx.backdrop} is the BACKDROP (background wall and floor). Place the product on exactly this backdrop and keep the same background color, floor surface and lighting. Do not restyle or change the backdrop.`);
   if(scene.lifestyle){
     L.push(`SCENE (the SAME scene in every photo of this product): ${scene.text} ${scene.brief ? 'Surface and backdrop for this product: ' + scene.brief + '.' : 'Choose ONE plain, bright surface and ONE plain backdrop that are easy to recreate at home (for example white poster board, a light wood table, a plain linen cloth) with good contrast to the product. No props.'}`);
+  }else if(scene.custom){
+    L.push(`MAIN SCENE PROMPT written by the shop owner (the surface and backdrop for EVERY photo of this listing; follow it exactly; it may be written in Turkish): "${scene.text}"`);
   }else if(scene.text){
     L.push(`SCENE (identical in every photo of every listing): ${scene.text}`);
   }
@@ -1499,9 +1510,19 @@ function buildPhotoPrompt(p, slotIdx, scene, hasAnchor, total){
     for(let k=0;k<total;k++){ if(k !== slotIdx) others.push(`photo ${k+1}: ${angleInfo(p, k).label}`); }
     L.push(`THIS IS PHOTO ${slotIdx+1} OF ${total} in the same listing. The other photos use these viewpoints (${others.join('; ')}). This photo must show the product from a clearly different viewpoint than all of them, so a buyer sees the product from many sides without repetition.`);
   }
+  if(total > 1) L.push('CONSISTENCY RULE: every photo of this listing uses exactly the same surface, backdrop, lighting direction, color tone and shadow style. ONLY the camera angle and the product\'s pose / placement (for example standing upright, lying flat, leaning, tilted, turned to show another side; only what is natural and plausible for this product) change from photo to photo.');
   L.push(`ANGLE FOR THIS PHOTO: ${angleInfo(p, slotIdx).text}\nIf this exact viewpoint makes no sense for this particular product (for example a straight top-down view of a tall standing item), use the nearest natural alternative viewpoint that is still clearly different from the other photos. Only show sides of the product that are plausible from the original photo.`);
   L.push(`QUALITY RULES (always apply): ${PHOTO_QUALITY_RULES}`);
   return L.join('\n\n');
+}
+/* Aynı zemin/fon için Foto 1 referans gerekir: Foto 1 hazır değilse diğer fotoğraflar (referans açıkken) atlanır */
+function missingAnchor(p, s){
+  if(s > 0 && $('d_ref1').checked && !isPhotoSlotDone(p, 0)){
+    p.photoStatus[s] = 'error';
+    p.photoErrors[s] = 'Atlandı: Foto 1 hazır değil. Diğer fotoğraflar aynı zemin ve fon için Foto 1\'i referans alır — önce Foto 1\'i üret, sonra bunu yeniden dene.';
+    return true;
+  }
+  return false;
 }
 /* Toplu çalıştırmadan önce sahne eksikse erken uyar */
 function validatePhotoStyle(){
@@ -1510,7 +1531,7 @@ function validatePhotoStyle(){
 }
 
 async function callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages){
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent($('d_imgmodel').value || 'gemini-3.1-flash-image')}:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
       contents:[{ parts:[ {text: promptText}, {inline_data:{mime_type:mimeType, data:base64Data}} ].concat((extraImages||[]).map(e=>({inline_data:{mime_type:e.mime, data:e.data}}))) }],
@@ -1997,7 +2018,7 @@ async function runAllPhotoEdits(){
     const label = `${doneCount+1}/${total} fotoğraf işleniyor…`;
     $('photoEditStatus').textContent = label;
     setGlobalRun(true, label);
-    await editSlot(p, s, null, null);
+    if(missingAnchor(p, s)) renderProducts(); else await editSlot(p, s, null, null);
     doneCount++;
     $('photoProgressbar').style.width = Math.round((doneCount/total)*100)+'%';
   }
@@ -2072,7 +2093,7 @@ async function runFullPipeline(){
       $('fullRunStatus').textContent = label;
       setGlobalRun(true, label);
       try{
-        await editSlot(p, s, null, null);
+        if(missingAnchor(p, s)) renderProducts(); else await editSlot(p, s, null, null);
       }catch(err){
         // editSlot already catches its own errors internally, but guard here too
         // in case something unexpected (e.g. a render exception) escapes it.
@@ -2328,6 +2349,15 @@ function restoreSettings(){
   if(el && el.id && el.id.startsWith('d_') && ['INPUT','SELECT','TEXTAREA'].includes(el.tagName) && el.type !== 'file') saveSettingEl(el);
 }));
 
+/* Tahmini görsel maliyeti: Google'ın yayımladığı 1K görsel çıktı fiyatları (USD). Fiyat değişebilir; metin üretimi ayrı ve çok daha ucuz. */
+const IMG_PRICES = { 'gemini-3.1-flash-image': 0.067, 'gemini-nano-banana-2.1': 0.0336, 'gemini-3.1-flash-lite-image': 0.0336 };
+function updateCostHint(){
+  const n = parseInt($('d_photocount').value) || 0;
+  const price = IMG_PRICES[$('d_imgmodel').value] || IMG_PRICES['gemini-3.1-flash-image'];
+  const per = n * price;
+  $('imgCostHint').textContent = `Tahmini: ürün başına ${n} fotoğraf ≈ $${per.toFixed(2)}; 100 ürün ≈ $${(per*100).toFixed(0)}. (1K görsel, Google'ın yayımladığı fiyata göre; değişebilir. Metin üretimi ayrı ve çok daha ucuz.)`;
+}
+['d_imgmodel','d_photocount'].forEach(id=> $(id).addEventListener('change', updateCostHint));
 function syncPhotoStyleUi(){
   const v = $('d_scene').value;
   $('sceneLifestyleNote').style.display = v === 'lifestyle' ? 'block' : 'none';
@@ -2341,6 +2371,7 @@ function syncPhotoStyleUi(){
   $('angleCustomBox').style.display = $('d_angles').value === 'custom' ? 'block' : 'none';
   $('sceneImageStatus').textContent = sceneCustomImage ? '✓ Görsel yüklü' : 'Henüz görsel yüklenmedi';
   syncPhotoPromptFieldsVisibility();
+  updateCostHint();
 }
 ['d_scene','d_angles'].forEach(id=> $(id).addEventListener('change', syncPhotoStyleUi));
 $('sceneImageBtn').addEventListener('click', ()=> $('sceneImageFile').click());
