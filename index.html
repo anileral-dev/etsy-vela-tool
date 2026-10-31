@@ -58,13 +58,28 @@ h1{font-size:24px;font-weight:800;margin:0 0 4px;letter-spacing:-0.02em;}
 .pill.active .dot{background:var(--accent);}
 
 /* ---------- Tabs ---------- */
-.globalrun{
-  display:flex;align-items:center;gap:10px;padding:9px 14px;margin-bottom:10px;
-  background:var(--accent-soft);border:1px solid #C7D2FE;border-radius:10px;
-  font-size:12.5px;color:var(--accent);
-}
-.globalrun .spin{border-top-color:var(--accent);}
-.globalrun #globalRunText{flex:1;font-weight:600;}
+.rundock{position:sticky;top:8px;z-index:100;margin:10px 0 0;padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-md);}
+.rundock.running{border-color:#C7D2FE;background:var(--accent-soft);}
+.rundock.paused{border-color:#FDDC9A;background:var(--warning-soft);}
+.rd-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.rd-state{display:flex;align-items:center;gap:8px;flex:1 1 240px;min-width:0;font-size:12.5px;color:var(--text-2);}
+.rd-state #globalRunText{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.rundock.running .rd-state{color:var(--accent);}
+.rundock.paused .rd-state{color:var(--warning);}
+.rd-dot{width:8px;height:8px;border-radius:50%;background:var(--border-strong);flex:none;}
+.rundock.paused .rd-dot{background:var(--warning);}
+.rd-actions{display:flex;gap:6px;}
+.rd-money{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--text);cursor:pointer;max-width:100%;font-family:inherit;}
+.rd-money:hover{border-color:var(--border-strong);}
+.rd-money.warn{color:var(--warning);border-color:#FDDC9A;background:var(--warning-soft);}
+.rd-money.bad{color:var(--danger);border-color:#FDA29B;background:var(--danger-soft);}
+.rd-caret{color:var(--text-3);font-size:10px;}
+@media (max-width:600px){ .rd-state #globalRunText{white-space:normal;overflow:visible;} .rd-state{flex-basis:100%;} }
+.rd-bar{height:4px;border-radius:999px;background:rgba(16,24,40,.08);margin-top:8px;overflow:hidden;}
+.rd-bar > div{height:100%;width:0;background:var(--accent);transition:width .2s ease;}
+.rd-edit{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
+.rd-edit-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.rd-edit .hint{display:block;margin:8px 0 0;font-size:11.5px;color:var(--text-3);line-height:1.5;}
 
 .tabbar{
   display:flex;overflow-x:auto;gap:4px;padding:4px 0 0;
@@ -207,16 +222,24 @@ td{color:var(--text-2);}
 
 /* ---------- History ---------- */
 .jobrow{
-  display:grid;grid-template-columns:56px 1fr auto auto;gap:14px;align-items:center;
+  display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;
   padding:12px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:#fff;
 }
+.jobrow.open{margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;}
 .jobrow .jobthumb{width:56px;height:56px;border-radius:8px;overflow:hidden;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;}
 .jobrow .jobthumb img{width:100%;height:100%;object-fit:cover;}
 .jobrow .jobmeta{min-width:0;}
 .jobrow .jobname{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.jobrow .curtag{font-size:10.5px;font-weight:600;color:var(--success);margin-left:6px;}
 .jobrow .jobsub{font-size:11.5px;color:var(--text-3);font-family:'IBM Plex Mono',monospace;margin-top:3px;}
-.jobrow .jobstatus{font-size:11px;font-family:'IBM Plex Mono',monospace;white-space:nowrap;}
-.jobrow .jobactions{display:flex;gap:6px;}
+.jobrow .jobstatus{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text-2);margin-top:3px;}
+.jobrow .jobactions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+.jobgallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin:0 0 10px;padding:12px;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;background:var(--bg-subtle);}
+.jobgallery .jt a{display:block;}
+.jobgallery .jt img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#fff;display:block;}
+.jobgallery .jt .cap{font-size:10px;color:var(--text-3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'IBM Plex Mono',monospace;}
+.jobgallery .jnone{grid-column:1 / -1;font-size:12px;color:var(--text-3);}
+@media (max-width:760px){ .jobrow{grid-template-columns:56px 1fr;} .jobrow .jobactions{grid-column:1 / -1;justify-content:flex-start;} }
 
 
 .tagbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
@@ -283,6 +306,30 @@ td{color:var(--text-2);}
 <body>
 <div class="wrap">
 
+  <div class="rundock" id="runDock">
+    <div class="rd-row">
+      <div class="rd-state"><span class="spin" id="rdSpin" style="display:none;"></span><span class="rd-dot" id="rdDot"></span><span id="globalRunText" class="mono">Hazır</span></div>
+      <div class="rd-actions">
+        <button class="btn btn-xs btn-danger-ghost" id="globalStopBtn" style="display:none;">⏹ Durdur</button>
+        <button class="btn btn-xs btn-primary" id="globalResumeBtn" style="display:none;">▶ Devam ettir</button>
+      </div>
+      <button type="button" class="rd-money" id="spendChip" aria-expanded="false" title="Gemini harcaması (tahmini). Bakiyeni girmek için tıkla."><span>💳</span><span id="spendText" class="mono">Harcanan ≈ $0.00 · Kalan: bakiyeni gir</span><span class="rd-caret">▾</span></button>
+    </div>
+    <div class="rd-bar" id="rdBarWrap" style="display:none;"><div id="rdBar"></div></div>
+    <div class="rd-edit" id="spendEdit" style="display:none;">
+      <div class="rd-edit-row">
+        <div class="field" style="min-width:220px;flex:1;max-width:300px;">
+          <label for="spendBalanceInput">Google AI Studio'da şu an kalan bakiyem (USD)</label>
+          <input type="number" id="spendBalanceInput" min="0" step="0.01" placeholder="örn. 10.00" inputmode="decimal">
+        </div>
+        <button class="btn btn-sm btn-primary" id="spendSaveBtn">Kaydet</button>
+        <button class="btn btn-sm btn-ghost" id="spendResetBtn">Sıfırla (bakiye + sayaç)</button>
+      </div>
+      <p class="hint" id="spendDetail"></p>
+      <p class="hint">Google, API anahtarıyla kalan bakiyeyi okumaya izin vermiyor. Bu yüzden program yaptığı her Gemini çağrısının <b>tahmini</b> ücretini kendisi sayar (görsel: seçtiğin modelin 1K fiyatı; metin: kullanılan token). Gerçek bakiyeni bir kez girersin, "Kalan" ondan düşülür. Ara sıra AI Studio → Billing'deki gerçek rakamla eşitle; sayaç birkaç sent sapabilir. Sayaç bu tarayıcıda saklanır.</p>
+    </div>
+  </div>
+
   <div class="topbar">
     <div class="brand-row">
       <div>
@@ -297,17 +344,11 @@ td{color:var(--text-2);}
         <span class="pill" id="pill-4"><span class="dot"></span><span>4 · Export</span></span>
       </div>
     </div>
-    <div class="globalrun" id="globalRunBar" style="display:none;">
-      <span class="spin"></span>
-      <span id="globalRunText" class="mono">İşleniyor…</span>
-      <button class="btn btn-xs btn-ghost" id="globalStopBtn">⏹ Durdur</button>
-    </div>
     <nav class="tabbar">
       <button class="tab active" data-tab="import">İçe Aktar</button>
       <button class="tab" data-tab="settings">Ayarlar &amp; AI</button>
       <button class="tab" data-tab="products">Ürünler <span class="badge" id="tabProductCount">0</span></button>
       <button class="tab" data-tab="export">Dışa Aktar</button>
-      <button class="tab" data-tab="history">Geçmiş <span class="badge" id="tabHistoryCount">0</span></button>
     </nav>
   </div>
 
@@ -546,23 +587,12 @@ td{color:var(--text-2);}
   <div class="tabpanel" id="tab-products">
     <div class="panel" id="fullRunPanel" style="border-color:#C7D2FE;background:var(--accent-soft);">
       <h2>▶ Hepsini çalıştır (önerilen)</h2>
-      <p class="desc">Tek tıkla: önce her ürün için title/description/kategori/tag üretir, sonra "Ayarlar & AI"da seçtiğin foto stiliyle (sabit arka plan + açılar) tüm fotoğrafları düzenler. İstediğin an durdurabilir, kaldığın yerden devam edebilir ya da o ana kadar bitenlerle export alabilirsin.</p>
+      <p class="desc">Tek tıkla: önce her ürün için title/description/kategori/tag üretir, sonra "Ayarlar & AI"da seçtiğin foto stiliyle (sabit arka plan + açılar) tüm fotoğrafları düzenler. İstediğin an üstteki sabit çubuktan durdurabilir, "Devam ettir" ile kaldığın yerden sürdürebilir ya da o ana kadar bitenlerle export alabilirsin.</p>
       <button class="btn btn-primary" id="fullRunBtn">▶ Hepsini Çalıştır</button>
       <button class="btn btn-ghost" id="fullStopBtn" style="display:none;">⏹ Durdur</button>
       <span id="fullRunStatus" class="mono" style="margin-left:12px;font-size:12.5px;color:var(--text-2);"></span>
       <div class="progressbar-wrap" id="fullProgressbarWrap" style="display:none;">
         <div class="progressbar" id="fullProgressbar"></div>
-      </div>
-    </div>
-
-    <div class="panel" id="analyzePanel">
-      <h2>Sadece metni çıkar <span class="mono" style="font-size:11px;font-weight:400;color:var(--text-3);">(ayrı çalıştırmak istersen)</span></h2>
-      <p class="desc">Ürünleri tek tek işler, her biri bitince kartı canlı günceller. İstediğin an durdurabilir, kaldığın yerden devam edebilirsin.</p>
-      <button class="btn btn-primary" id="analyzeBtn">✦ AI ile ürünleri çıkar</button>
-      <button class="btn btn-ghost" id="stopBtn" style="display:none;">⏹ Durdur</button>
-      <span id="analyzeStatus" class="mono" style="margin-left:12px;font-size:12.5px;color:var(--text-3);"></span>
-      <div class="progressbar-wrap" id="progressbarWrap" style="display:none;">
-        <div class="progressbar" id="progressbar"></div>
       </div>
     </div>
 
@@ -598,6 +628,10 @@ td{color:var(--text-2);}
       <p class="desc" id="exportDesc">Henüz çıkarılmış ürün yok.</p>
       <p class="desc" id="exportPhotoSummary" style="margin-top:-8px;"></p>
       <p class="desc" id="exportCatSummary" style="margin-top:-8px;"></p>
+      <label style="display:flex;align-items:flex-start;gap:8px;margin:4px 0 14px;font-size:12.5px;color:var(--text-2);cursor:pointer;max-width:680px;">
+        <input type="checkbox" id="exportOnlyComplete" style="margin-top:2px;">
+        <span>Sadece <b>tamamlanan</b> ürünleri aktar (metni ve seçtiğin sayıdaki fotoğrafın hepsi hazır olanlar). Kredi bitince ya da işi yarıda kesince kullan: hazır olanları Vela'ya yükle, kalanları sonra tamamla. <b id="exportCompleteCount"></b></span>
+      </label>
       <button class="btn btn-primary" id="exportCsvBtn">⬇ Vela için CSV indir</button>
       <button class="btn btn-ghost" id="exportBtn">.xlsx olarak da indir</button>
       <button class="btn btn-ghost" id="exportZipBtn">📦 ZIP olarak indir (fotoğraflar + xlsx)</button>
@@ -610,16 +644,22 @@ td{color:var(--text-2);}
         Düzenlenen fotoğraflar artık otomatik olarak (kendi sitenin sunucusunda, Netlify Blobs üzerinden) yüklenip linki buraya düşer, elle bir şey yapman gerekmez. Boş kalan slotlar (hiç düzenlenmemişse) orijinal Etsy görselinin linkini kullanır.
       </div>
     </div>
-  </div>
 
-  <!-- =============== TAB: HISTORY =============== -->
-  <div class="tabpanel" id="tab-history">
-    <div class="panel">
+    <div class="panel" id="historyPanel">
       <div class="panel-head">
-        <div><h2>Geçmiş importlar</h2><p class="desc" style="margin:0;">Her yüklediğin dosya otomatik kaydedilir — durumu ve ilerlemesiyle birlikte. Bu tarayıcıda saklanır, başka cihazdan görünmez.</p></div>
+        <div>
+          <h2>Geçmiş işler</h2>
+          <p class="desc" style="margin:0;">Yüklediğin her dosya, durumu ve ilerlemesiyle birlikte otomatik kaydedilir. Düzenlenen fotoğraflar senin sitende kalıcı saklanır; hangi fotoğrafın hangi ürüne ait olduğu bu tarayıcıda tutulur. Buradan istediğin işi açıp devam edebilir ya da CSV / xlsx / ZIP olarak istediğin zaman indirebilirsin.</p>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn btn-xs btn-ghost" id="historyBackupBtn" title="Tüm geçmişi tek dosyaya yedekler (başka tarayıcıya/bilgisayara taşımak için)">⬇ Yedek indir</button>
+          <button class="btn btn-xs btn-ghost" id="historyRestoreBtn">⬆ Yedek yükle</button>
+          <input type="file" id="historyRestoreFile" accept=".json,application/json" style="display:none;">
+        </div>
       </div>
+      <div id="historyNote" class="hint" style="font-size:11.5px;margin:-6px 0 12px;"></div>
       <div id="historyList"></div>
-      <div class="emptystate" id="historyEmpty">
+      <div class="emptystate" id="historyEmpty" style="padding:30px 20px;">
         <div class="big">Henüz geçmiş yok</div>
         <div>Bir dosya içe aktardığında burada listelenecek.</div>
       </div>
@@ -649,7 +689,8 @@ const $ = (id) => document.getElementById(id);
 
 /* ---------- Job history (localStorage) ---------- */
 const HISTORY_KEY = 'etsy_vela_job_history_v1';
-const MAX_JOBS = 20;
+const MAX_JOBS = 50;
+let historySaveFailed = false;
 let currentJobId = null;
 
 function loadJobs(){
@@ -659,9 +700,10 @@ function loadJobs(){
   }catch(e){ return []; }
 }
 function saveJobs(jobs){
-  // Büyük base64 görselleri (linki zaten host edilmiş olanları) kaydetmeye gerek yok: hem hızlanır hem kota dolmaz.
+  // Büyük base64 görselleri (linki zaten host edilmiş olanları) ve ürünlerde zaten bulunan ham satırları kaydetmeye gerek yok: hızlanır, kota dolmaz.
   const slim = (all)=> jobs.map(j=>({
     ...j,
+    rows: (j.products && j.rows && j.rows.length === j.products.length) ? null : j.rows, // açarken ürünlerin ham satırından yeniden kurulur
     products: (j.products||[]).map(p=>({
       ...p,
       editedImages: (p.editedImages||[]).map((img, i)=> (all || (p.finalUrls && p.finalUrls[i])) ? null : img),
@@ -671,12 +713,15 @@ function saveJobs(jobs){
   }));
   try{
     localStorage.setItem(HISTORY_KEY, JSON.stringify(slim(false)));
+    historySaveFailed = false;
     return true;
   }catch(e){
     try{
       localStorage.setItem(HISTORY_KEY, JSON.stringify(slim(true)));
+      historySaveFailed = false;
       return true;
     }catch(e2){
+      historySaveFailed = true;
       console.error('Geçmiş kaydedilemedi (depolama dolu olabilir):', e2);
       return false;
     }
@@ -691,12 +736,13 @@ function jobSummary(job){
 function createJob(filename){
   const jobs = loadJobs();
   const job = {
-    id: 'job_'+Date.now(),
+    id: 'job_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
     filename: filename,
     importedAt: Date.now(),
     updatedAt: Date.now(),
     headers: state.headers,
     rows: state.rows,
+    photoCount: parseInt($('d_photocount').value) || 0,
     products: state.products
   };
   jobs.unshift(job);
@@ -716,9 +762,10 @@ function flushCurrentJob(){
   jobs[idx].headers = state.headers;
   jobs[idx].rows = state.rows;
   jobs[idx].products = state.products;
+  jobs[idx].photoCount = parseInt($('d_photocount').value) || 0;
   jobs[idx].updatedAt = Date.now();
   saveJobs(jobs);
-  renderHistoryList();
+  if($('tab-export').classList.contains('active')) renderHistoryList(); // görünmüyorsa boşuna çizme
 }
 function updateCurrentJob(){
   if(!currentJobId) return;
@@ -737,8 +784,8 @@ function openJob(jobId){
   const job = jobs.find(j=>j.id===jobId);
   if(!job) return;
   state.headers = job.headers || [];
-  state.rows = job.rows || [];
   state.products = (job.products || []).map(padPhotoArrays);
+  state.rows = job.rows || state.products.map(p=>p.rawRow || {});
   currentJobId = job.id;
   $('filepillWrap').innerHTML = `<div class="filepill">✓ ${escapeHtml(job.filename)} — ${state.rows.length} satır (geçmişten açıldı)</div>`;
   if(state.headers.length) renderRawPreview();
@@ -752,37 +799,78 @@ function formatJobDate(ts){
   const d = new Date(ts);
   return d.toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'numeric'}) + ' ' + d.toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
 }
+/* Açık iş canlı veriyi (bellekteki), diğerleri kayıtlı veriyi kullanır */
+const openGalleries = new Set();
+function jobProductsOf(job){ return job.id === currentJobId ? state.products : (job.products || []).map(padPhotoArrays); }
+function jobPhotoCount(job){ const cur = parseInt($('d_photocount').value) || 0; return job.id === currentJobId ? cur : (job.photoCount || cur); }
+function jobStats(job){
+  const prods = jobProductsOf(job), pc = jobPhotoCount(job);
+  let photos = 0;
+  prods.forEach(p=>{ for(let s=0;s<MAX_PHOTOS;s++) if(p.finalUrls && p.finalUrls[s]) photos++; });
+  return { prods, pc, n: prods.length, photos, text: prods.filter(p=>p.status==='done').length, complete: prods.filter(p=>isProductComplete(p, pc)).length };
+}
+function jobFileBase(job){ return 'vela-' + fileSlug(String(job.filename || 'is').replace(/\.[^.]+$/, '')); }
 function renderHistoryList(){
   const jobs = loadJobs();
-  $('tabHistoryCount').textContent = jobs.length;
   const listEl = $('historyList');
   $('historyEmpty').style.display = jobs.length ? 'none' : 'block';
+  // depolama durumu
+  const used = (localStorage.getItem(HISTORY_KEY) || '').length;
+  const kb = Math.round(used / 1024);
+  const note = $('historyNote');
+  if(historySaveFailed){
+    note.innerHTML = '<span style="color:var(--danger);">⚠ Tarayıcı depolaması dolu: son değişiklikler geçmişe kaydedilemedi. Önemli işleri ZIP / CSV olarak indir, "Yedek indir" ile yedekle ve eski işleri sil.</span>';
+  }else if(used > 3.5*1024*1024){
+    note.innerHTML = `<span style="color:var(--warning);">⚠ Geçmiş depolaması dolmak üzere (${kb} KB / yaklaşık 5 MB). Eski işleri indirip silmeni öneririm.</span>`;
+  }else{
+    note.textContent = jobs.length ? `Kayıt alanı: ${kb} KB / yaklaşık 5 MB · ${jobs.length} iş` : '';
+  }
   listEl.innerHTML = '';
   jobs.forEach(job=>{
-    const firstPhoto = (job.products||[]).find(p=>p.sourceImageUrl)?.sourceImageUrl;
+    const st = jobStats(job);
+    const isCur = job.id === currentJobId;
+    const thumbSrc = (st.prods.map(p=>p.finalUrls && p.finalUrls[0]).find(Boolean)) || (st.prods.find(p=>p.sourceImageUrl) || {}).sourceImageUrl;
     const row = document.createElement('div');
-    row.className = 'jobrow';
+    row.className = 'jobrow' + (openGalleries.has(job.id) ? ' open' : '');
     row.innerHTML = `
-      <div class="jobthumb">${firstPhoto ? `<img src="${escapeHtml(firstPhoto)}" loading="lazy">` : ''}</div>
+      <div class="jobthumb">${thumbSrc ? `<img src="${escapeHtml(thumbSrc)}" loading="lazy">` : ''}</div>
       <div class="jobmeta">
-        <div class="jobname">${escapeHtml(job.filename)}</div>
-        <div class="jobsub">${formatJobDate(job.importedAt)} · ${(job.products||[]).length} ürün</div>
+        <div class="jobname">${escapeHtml(job.filename)}${isCur ? '<span class="curtag">● açık</span>' : ''}</div>
+        <div class="jobsub">${formatJobDate(job.importedAt)} · ${st.n} ürün · ${st.photos} fotoğraf hazır</div>
+        <div class="jobstatus">${st.text}/${st.n} metin · ${st.complete}/${st.n} ürün tamamen hazır (metin + ${st.pc} foto)</div>
       </div>
-      <div class="jobstatus">${escapeHtml(jobSummary(job))}</div>
       <div class="jobactions">
-        <button class="btn btn-xs btn-primary" data-open-job="${job.id}">Aç</button>
-        <button class="btn btn-xs btn-danger-ghost" data-delete-job="${job.id}">Sil</button>
-      </div>
-    `;
+        <button class="btn btn-xs btn-primary" data-job-open>${isCur ? 'Ürünlere git' : 'Aç / devam et'}</button>
+        <button class="btn btn-xs btn-ghost" data-job-csv>⬇ CSV</button>
+        <button class="btn btn-xs btn-ghost" data-job-xlsx>.xlsx</button>
+        <button class="btn btn-xs btn-ghost" data-job-zip>📦 ZIP</button>
+        <button class="btn btn-xs btn-ghost" data-job-gallery>🖼 Fotoğraflar (${st.photos})</button>
+        <button class="btn btn-xs btn-danger-ghost" data-job-delete>Sil</button>
+      </div>`;
     listEl.appendChild(row);
-  });
-  listEl.querySelectorAll('[data-open-job]').forEach(btn=>{
-    btn.addEventListener('click', ()=> openJob(btn.dataset.openJob));
-  });
-  listEl.querySelectorAll('[data-delete-job]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      if(confirm('Bu geçmiş kaydını silmek istediğine emin misin? Geri alınamaz.')) deleteJob(btn.dataset.deleteJob);
+    row.querySelector('[data-job-open]').addEventListener('click', ()=>{ if(isCur) goTab('products'); else openJob(job.id); });
+    row.querySelector('[data-job-csv]').addEventListener('click', ()=>{ runExportCsv(jobProductsOf(job), jobPhotoCount(job), jobFileBase(job) + '.csv'); });
+    row.querySelector('[data-job-xlsx]').addEventListener('click', ()=>{ runExportXlsx(jobProductsOf(job), jobPhotoCount(job), jobFileBase(job) + '.xlsx'); });
+    row.querySelector('[data-job-zip]').addEventListener('click', (e)=>{ runExportZip(jobProductsOf(job), jobPhotoCount(job), jobFileBase(job) + '.zip', e.currentTarget); });
+    row.querySelector('[data-job-gallery]').addEventListener('click', ()=>{ if(openGalleries.has(job.id)) openGalleries.delete(job.id); else openGalleries.add(job.id); renderHistoryList(); });
+    row.querySelector('[data-job-delete]').addEventListener('click', ()=>{
+      if(confirm('Bu işi geçmişten silmek istediğine emin misin? (Yüklenmiş fotoğraflar sitende kalır ama hangi ürüne ait olduğu bilgisi silinir.) Geri alınamaz.')){ openGalleries.delete(job.id); deleteJob(job.id); }
     });
+    if(openGalleries.has(job.id)){
+      const g = document.createElement('div');
+      g.className = 'jobgallery';
+      let tiles = '';
+      st.prods.forEach((p, idx)=>{
+        for(let s=0;s<MAX_PHOTOS;s++){
+          const u = p.finalUrls && p.finalUrls[s];
+          if(!u) continue;
+          const t = (p.title || guessRawTitle(p.rawRow) || 'ürün');
+          tiles += `<div class="jt"><a href="${escapeHtml(normalizePhotoUrl(u))}" target="_blank" rel="noopener" title="${escapeHtml(t)} — foto ${s+1}"><img src="${escapeHtml(normalizePhotoUrl(u))}" loading="lazy"></a><div class="cap">#${idx+1} ${escapeHtml(t.slice(0,22))} · F${s+1}</div></div>`;
+        }
+      });
+      g.innerHTML = tiles || '<div class="jnone">Bu işte henüz düzenlenmiş fotoğraf yok.</div>';
+      listEl.appendChild(g);
+    }
   });
 }
 
@@ -793,6 +881,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
     document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
     tab.classList.add('active');
     $('tab-'+tab.dataset.tab).classList.add('active');
+    if(tab.dataset.tab === 'export'){ try{ flushCurrentJob(); }catch(e){} renderHistoryList(); }
   });
 });
 function goTab(name){
@@ -1162,11 +1251,8 @@ async function callGeminiText(promptText, image){
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ contents:[{ parts:[{ text: promptText }].concat(image ? [{ inline_data:{ mime_type:image.mime, data:image.data } }] : []) }] })
   });
-  if(!res.ok){
-    const errBody = await res.text().catch(()=> '');
-    throw new Error('Gemini API hata '+res.status+(errBody?': '+errBody.slice(0,180):''));
-  }
   const data = await res.json();
+  recordTextSpend(data.usageMetadata);
   const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
   return parts.filter(p=>p.text).map(p=>p.text).join('\n');
 }
@@ -1238,17 +1324,71 @@ async function runPool(items, limit, worker){
   await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, lane));
 }
 /* 429 / 5xx / ağ hatasında üstel bekleyip 4 kez dener (hız sınırına takılınca iş yarıda kalmasın) */
+class GeminiError extends Error {
+  constructor(msg, status, kind){ super(msg); this.status = status; this.kind = kind || null; }
+}
+/* Yeniden denemenin anlamsız olduğu durumlar: kredi/kota bitti, anahtar/izin sorunu */
+function classifyGeminiError(status, body){
+  const t = String(body || '');
+  if(status === 402 || /prepayment credits are depleted|credits are depleted|enable billing|billing account/i.test(t)) return 'credit';
+  if(status === 401 || status === 403 || /API key not valid|API key expired|API_KEY_INVALID|PERMISSION_DENIED|UNAUTHENTICATED/i.test(t)) return 'key';
+  if(status === 429 && /RESOURCE_EXHAUSTED|exceeded your current quota/i.test(t) && /per\s*day|daily|PerDay/i.test(t)) return 'quota';
+  return null;
+}
+function geminiErrorText(status, body, kind){
+  const raw = String(body || '').replace(/\s+/g, ' ').trim().slice(0, 220);
+  if(kind === 'credit') return 'Gemini krediniz/bakiyeniz bitti. aistudio.google.com → projen → Billing bölümünden kredi ekle, sonra aynı işi tekrar çalıştır (hazır olanlar atlanır). Ayrıntı: ' + raw;
+  if(kind === 'key') return 'Gemini API anahtarı geçersiz, süresi dolmuş ya da bu işlem için izni yok — "Ayarlar & AI" sekmesinden anahtarı kontrol et. Ayrıntı: ' + raw;
+  if(kind === 'quota') return 'Gemini günlük kotan doldu. Kotayı artırdıktan ya da ertesi gün tekrar çalıştır (hazır olanlar atlanır). Ayrıntı: ' + raw;
+  return 'Gemini API hata ' + status + (raw ? ': ' + raw : '');
+}
+/* 429 / 5xx / ağ hatasında üstel bekleyip 4 kez dener; kredi/kota/anahtar hatalarında hemen vazgeçer */
 async function geminiFetch(url, init){
   const tries = 4;
   for(let a = 0; a < tries; a++){
-    try{
-      const res = await fetch(url, init);
-      if(res.ok || ![429,500,502,503,504].includes(res.status) || a === tries-1) return res;
-    }catch(e){
-      if(a === tries-1) throw e;
+    let res = null, netErr = null;
+    try{ res = await fetch(url, init); }catch(e){ netErr = e; }
+    if(res && res.ok) return res;
+    let body = '';
+    if(res){ try{ body = await res.text(); }catch(e){ body = ''; } }
+    if(res){
+      const kind = classifyGeminiError(res.status, body);
+      if(kind) throw new GeminiError(geminiErrorText(res.status, body, kind), res.status, kind);
+    }
+    const retryable = !!netErr || [429,500,502,503,504].includes(res.status);
+    if(!retryable || a === tries - 1){
+      if(netErr) throw netErr;
+      throw new GeminiError(geminiErrorText(res.status, body, null), res.status, null);
     }
     await new Promise(r=> setTimeout(r, GEMINI_RETRY_BASE_MS * Math.pow(2, a) * (0.75 + Math.random()*0.5)));
   }
+}
+
+/* Çalışma sırasında kredi/kota/anahtar sorunu olursa işi otomatik durdur; o ana kadarki ilerleme korunur */
+let runAbortReason = '';
+let consecutive429 = 0;
+function abortRun(reason){ if(!runAbortReason) runAbortReason = reason; runStopRequested = true; syncRunUi(); }
+function noteGeminiOutcome(err){
+  if(!err){ consecutive429 = 0; return; }
+  if(!isRunning) return; // tek tek (elle) işlemlerde sadece kartta hata gösterilir
+  if(err.kind){ abortRun(err.message); return; }
+  if(err.status === 429 && ++consecutive429 >= 3){
+    abortRun('Gemini art arda "çok fazla istek / kota" (429) döndürüyor: kredin ya da kotan bitmiş veya hız sınırına takılmış olabilir. "Hız" ayarını düşürüp biraz bekledikten sonra tekrar çalıştır (hazır olanlar atlanır).');
+  }
+}
+function isProductComplete(p, photoCount){
+  if(p.status !== 'done') return false;
+  for(let s=0;s<photoCount;s++){ if(!(p.finalUrls && p.finalUrls[s])) return false; }
+  return true;
+}
+/* Otomatik durdurma olduysa: ne kadarının hazır olduğunu ve ne yapılacağını söyle */
+function reportRunAbort(){
+  if(!runAbortReason) return;
+  const reason = runAbortReason; runAbortReason = '';
+  const photoCount = parseInt($('d_photocount').value) || 0;
+  const complete = state.products.filter(p=>isProductComplete(p, photoCount)).length;
+  let photos = 0; state.products.forEach(p=>{ for(let s=0;s<MAX_PHOTOS;s++) if(p.finalUrls && p.finalUrls[s]) photos++; });
+  alert(`İş otomatik durduruldu.\n\n${reason}\n\nŞu ana kadar: ${complete}/${state.products.length} ürün tamamen hazır, ${photos} fotoğraf hazır. Hiçbir şey kaybolmadı.\n\n• Hazır olanları indirmek için "Dışa Aktar" sekmesinde "Sadece tamamlanan ürünleri aktar"ı işaretleyip indir.\n• Sorunu çözünce aynı düğmeyle tekrar çalıştır: hazır olanlar atlanır, kaldığı yerden devam eder.`);
 }
 /* Ürünün kaynak fotoğrafı bir kez indirilir; aynı ürünün tüm fotoğrafları aynı kopyayı kullanır */
 const srcImageCache = new Map();
@@ -1260,18 +1400,73 @@ function getSourceImage(p){
   return srcImageCache.get(key);
 }
 
-function setGlobalRun(active, label){
-  isRunning = active;
-  $('globalRunBar').style.display = active ? 'flex' : 'none';
-  if(label) $('globalRunText').textContent = label;
-  $('globalStopBtn').disabled = false;
-  $('globalStopBtn').textContent = '⏹ Durdur';
-  ['analyzeBtn','photoEditAllBtn','fullRunBtn'].forEach(id=>{ const el = $(id); if(el) el.disabled = active; });
+/* ---------- Üstte sabit kontrol çubuğu: durum + Durdur / Devam ettir + Gemini harcaması ---------- */
+let currentRunKind = null;   // 'full' | 'photo' | 'text'
+let pausedKind = null;       // devam ettirilebilir iş türü (durdurulmuş ya da eksik kalmış)
+let pausedByStop = false;
+/* Bitmemiş iş: metni olmayan ürün ve fotosu hazır olmayan slot sayısı */
+function pendingWork(kind){
+  const photoCount = parseInt($('d_photocount').value) || 0;
+  let text = 0, photos = 0;
+  state.products.forEach(p=>{
+    if(kind !== 'photo' && p.status !== 'done') text++;
+    if(kind !== 'text') for(let s=0;s<photoCount;s++){ if(!isPhotoSlotDone(p, s)) photos++; }
+  });
+  return { text, photos };
 }
-$('globalStopBtn').addEventListener('click', ()=>{
+function pendingLabel(w){ const a = []; if(w.text) a.push(w.text + ' metin'); if(w.photos) a.push(w.photos + ' foto'); return a.join(', '); }
+function setDockProgress(pct){
+  const wrap = $('rdBarWrap');
+  if(pct == null){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  $('rdBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+function syncRunUi(){
+  const stopping = isRunning && runStopRequested;
+  const dock = $('runDock');
+  dock.classList.toggle('running', isRunning);
+  dock.classList.toggle('paused', !isRunning && !!pausedKind);
+  $('rdSpin').style.display = isRunning ? 'inline-block' : 'none';
+  $('rdDot').style.display = isRunning ? 'none' : 'inline-block';
+  $('globalStopBtn').style.display = isRunning ? 'inline-flex' : 'none';
+  const rb = $('globalResumeBtn');
+  rb.style.display = (!isRunning && pausedKind) ? 'inline-flex' : 'none';
+  rb.textContent = pausedByStop ? '▶ Devam ettir' : '↻ Eksikleri tekrar dene';
+  ['globalStopBtn','fullStopBtn','photoStopBtn'].forEach(id=>{
+    const el = $(id); if(!el) return;
+    el.disabled = stopping;
+    el.textContent = stopping ? '⏳ Durduruluyor…' : '⏹ Durdur';
+  });
+}
+function setGlobalRun(active, label, kind){
+  isRunning = active;
+  if(kind) currentRunKind = kind;
+  if(active){
+    pausedKind = null;
+    if(label){ const e = estimateCost(currentRunKind); label += e.usd > 0 ? ` · kalan iş ≈ ${fmtUsd(e.usd)}` : ''; }
+  }else{
+    const w = pendingWork(currentRunKind);
+    const left = pendingLabel(w);
+    pausedByStop = !!runStopRequested;
+    pausedKind = (currentRunKind && (w.text || w.photos)) ? currentRunKind : null;
+    label = runStopRequested ? `Durduruldu — kalan: ${left || 'yok'}`
+          : (left ? `Bitti — eksik kalan: ${left}` : '✓ Tamamlandı');
+    setDockProgress(null);
+  }
+  if(label) $('globalRunText').textContent = label;
+  ['photoEditAllBtn','fullRunBtn'].forEach(id=>{ const el = $(id); if(el) el.disabled = active; });
+  syncRunUi();
+}
+function requestStop(){
+  if(!isRunning) return;
   runStopRequested = true;
-  $('globalStopBtn').disabled = true;
-  $('globalStopBtn').textContent = '⏳ Durduruluyor…';
+  syncRunUi();
+}
+$('globalStopBtn').addEventListener('click', requestStop);
+$('globalResumeBtn').addEventListener('click', ()=>{
+  const k = pausedKind;
+  if(!k || isRunning) return;
+  ({ full: runFullPipeline, photo: runAllPhotoEdits, text: analyzeAll })[k]();
 });
 function guardNotRunning(){
   if(isRunning){ alert('Şu anda başka bir işlem çalışıyor — önce onu durdur, sonra bunu başlat.'); return false; }
@@ -1300,29 +1495,26 @@ async function processProductText(p){
     p.tags = (parsed.tags || '').split(',').map(t=>t.trim()).filter(Boolean);
     p.materials = parsed.materials || '';
     p.status = 'done';
+    noteGeminiOutcome(null);
   }catch(err){
+    noteGeminiOutcome(err);
     p.status = 'error';
     p.errorMsg = err.message;
   }
 }
 
-function setRunning(isRunning){
-  $('analyzeBtn').style.display = isRunning ? 'none' : 'inline-flex';
-  $('stopBtn').style.display = isRunning ? 'inline-flex' : 'none';
-  $('progressbarWrap').style.display = isRunning ? 'block' : 'none';
-}
-
 function updateProgress(){
   const total = state.products.length;
   const done = state.products.filter(p=>p.status==='done'||p.status==='error').length;
-  $('progressbar').style.width = total ? Math.round((done/total)*100)+'%' : '0%';
+  setDockProgress(total ? Math.round((done/total)*100) : 0);
 }
 
 async function analyzeAll(){
   if(!guardNotRunning()) return;
-  runStopRequested = false;
-  setRunning(true);
-  setGlobalRun(true, 'Metin üretimi başlıyor…');
+  if(!preRunCostCheck('text')) return;
+  runStopRequested = false; runAbortReason = ''; consecutive429 = 0;
+  setGlobalRun(true, 'Metin üretimi başlıyor…', 'text');
+  updateProgress();
   setPill(2,'active');
   const total = state.products.length;
   let doneN = state.products.filter(p=>p.status === 'done').length; // devam: bitmişleri atla
@@ -1330,7 +1522,6 @@ async function analyzeAll(){
   renderProducts();
   await runPool(todo, concurrencyLimit(), async (p)=>{
     const label = `${doneN}/${total} ürün tamamlandı (metin)…`;
-    $('analyzeStatus').textContent = label;
     setGlobalRun(true, label);
     const job = processProductText(p); // durumu hemen 'processing' yapar
     renderProducts();
@@ -1341,16 +1532,11 @@ async function analyzeAll(){
     updateCurrentJob();
   });
   flushCurrentJob();
-  setRunning(false);
   setGlobalRun(false);
-  const doneCount = state.products.filter(p=>p.status==='done').length;
-  const errCount = state.products.filter(p=>p.status==='error').length;
   setPill(2, runStopRequested ? null : 'done');
   setPill(3,'active');
-  $('analyzeStatus').textContent = runStopRequested
-    ? `Durduruldu — ${doneCount}/${total} tamamlandı`
-    : `Tamamlandı — ${doneCount}/${total}${errCount ? `, ${errCount} hata` : ''}`;
   updateExportTab();
+  reportRunAbort();
 }
 
 function applyDefaultsToProducts(){
@@ -1361,16 +1547,10 @@ function applyDefaultsToProducts(){
     if(!p.sku) p.sku = prefix ? prefix + String(i+1).padStart(4,'0') : '';
   });
 }
-$('analyzeBtn').addEventListener('click', analyzeAll);
 $('reanalyzeBtn').addEventListener('click', ()=>{
   state.products.forEach(p=>{ p.status='pending'; p.errorMsg=''; });
   renderProducts();
   analyzeAll();
-});
-$('stopBtn').addEventListener('click', ()=>{
-  runStopRequested = true;
-  $('stopBtn').disabled = true;
-  $('stopBtn').textContent = '⏳ Durduruluyor…';
 });
 
 /* ---------- Regenerate title/description/tags per product ---------- */
@@ -1605,10 +1785,6 @@ async function callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraIma
       generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
     })
   });
-  if(!res.ok){
-    const errBody = await res.text().catch(()=> '');
-    throw new Error('Gemini API hata '+res.status+(errBody?': '+errBody.slice(0,220):''));
-  }
   const data = await res.json();
   const finishReason = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
   const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
@@ -1618,6 +1794,7 @@ async function callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraIma
     const detail = textPart ? textPart.text.slice(0,200) : (finishReason || 'bilinmeyen sebep');
     throw new Error('Gemini görsel döndürmedi — ' + detail);
   }
+  recordImageSpend();
   const inline = imgPart.inlineData || imgPart.inline_data;
   const mt = inline.mimeType || inline.mime_type || 'image/png';
   return `data:${mt};base64,${inline.data}`;
@@ -1726,6 +1903,7 @@ async function editSlot(p, slotIdx, card, manualFile){
         if(anchor) extraImages.push(anchor);
         const promptText = buildPhotoPrompt(p, slotIdx, scene, !!anchor, parseInt($('d_photocount').value) || 1);
         resultDataUrl = await callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages);
+        noteGeminiOutcome(null);
       }
     }finally{
       gate.release(); // yükleme (host) sırasında bir sonraki Gemini çağrısı başlayabilsin
@@ -1741,6 +1919,7 @@ async function editSlot(p, slotIdx, card, manualFile){
       p.photoErrors[slotIdx] = 'Görsel düzenlendi ama otomatik yükleme başarısız: '+hostErr.message+' — "İndir" ile kaydedip Final URL alanına elle ekleyebilirsin.';
     }
   }catch(err){
+    noteGeminiOutcome(err);
     p.photoStatus[slotIdx] = 'error';
     p.photoErrors[slotIdx] = err.message + (err.message.includes('Failed to fetch') ? ' — kaynak görsel CORS nedeniyle indirilemedi, aşağıdan elle yükleyebilirsin.' : '');
   }
@@ -1763,6 +1942,7 @@ function updateExportTab(){
     $('exportDesc').textContent = 'Henüz çıkarılmış ürün yok.';
     $('exportPhotoSummary').textContent = '';
     $('exportCatSummary').textContent = '';
+    $('exportCompleteCount').textContent = '';
     return;
   }
   const photoCount = parseInt($('d_photocount').value) || 0;
@@ -1780,7 +1960,12 @@ function updateExportTab(){
 
   const withEditedPhoto = state.products.filter(p=>photoEditedCount(p) > 0).length;
   const noPhotoEdit = n - withEditedPhoto;
-  $('exportDesc').textContent = `${n} ürün Vela şablonuna hazır — ${textDone}/${n} metin tamamlandı.`;
+  const completeN = state.products.filter(p=>isProductComplete(p, photoCount)).length;
+  $('exportCompleteCount').textContent = `(şu an ${completeN}/${n} ürün tamamlanmış)`;
+  const onlyComplete = $('exportOnlyComplete') && $('exportOnlyComplete').checked;
+  $('exportDesc').textContent = onlyComplete
+    ? `Sadece tamamlanan ${completeN}/${n} ürün aktarılacak.`
+    : `${n} ürün Vela şablonuna hazır — ${textDone}/${n} metin tamamlandı.`;
 
   if(editedNotHostedSlots > 0){
     // photos ARE being generated but never turn into a real link — points at the upload function
@@ -2097,9 +2282,11 @@ async function runAllPhotoEdits(){
   });
   if(!total){ alert('Düzenlenecek foto kalmamış — hepsi zaten "Hazır" durumda.'); return; }
 
-  runStopRequested = false;
+  if(!preRunCostCheck('photo')) return;
+  runStopRequested = false; runAbortReason = ''; consecutive429 = 0;
   setPhotoRunning(true);
-  setGlobalRun(true, 'Foto düzenleme başlıyor…');
+  setGlobalRun(true, 'Foto düzenleme başlıyor…', 'photo');
+  setDockProgress(0);
   let doneCount = 0;
   const step = async (p, s)=>{
     if(runStopRequested) return;
@@ -2114,6 +2301,7 @@ async function runAllPhotoEdits(){
     $('photoEditStatus').textContent = label;
     setGlobalRun(true, label);
     $('photoProgressbar').style.width = Math.round((doneCount/total)*100)+'%';
+    setDockProgress(Math.round((doneCount/total)*100));
   };
   await runPool(groups, concurrencyLimit(), ({p, slots})=> runProductPhotos(p, slots, step));
   srcImageCache.clear();
@@ -2123,13 +2311,11 @@ async function runAllPhotoEdits(){
   $('photoEditStatus').textContent = runStopRequested
     ? `Durduruldu — ${doneCount}/${total} tamamlandı`
     : `Tamamlandı — ${doneCount}/${total}`;
+  updateExportTab();
+  reportRunAbort();
 }
 $('photoEditAllBtn').addEventListener('click', runAllPhotoEdits);
-$('photoStopBtn').addEventListener('click', ()=>{
-  runStopRequested = true;
-  $('photoStopBtn').disabled = true;
-  $('photoStopBtn').textContent = '⏳ Durduruluyor…';
-});
+$('photoStopBtn').addEventListener('click', requestStop);
 
 /* ---------- Combined pipeline: text for every product, then photos for every product ---------- */
 function setFullRunning(isRunning){
@@ -2140,9 +2326,11 @@ function setFullRunning(isRunning){
 async function runFullPipeline(){
   if(!guardNotRunning()) return;
   if(!validatePhotoStyle()) return;
-  runStopRequested = false;
+  if(!preRunCostCheck('full')) return;
+  runStopRequested = false; runAbortReason = ''; consecutive429 = 0;
   setFullRunning(true);
-  setGlobalRun(true, 'Başlıyor…');
+  setGlobalRun(true, 'Başlıyor…', 'full');
+  setDockProgress(0);
   setPill(2,'active');
 
   const photoCount = parseInt($('d_photocount').value);
@@ -2161,6 +2349,7 @@ async function runFullPipeline(){
     $('fullRunStatus').textContent = label;
     setGlobalRun(true, label);
     $('fullProgressbar').style.width = grandTotal ? Math.round((doneSteps/grandTotal)*100)+'%' : '0%';
+    setDockProgress(grandTotal ? Math.round((doneSteps/grandTotal)*100) : 0);
   };
 
   const photoStep = async (p, s)=>{
@@ -2211,17 +2400,15 @@ async function runFullPipeline(){
     ? `Durduruldu — ${productsFullyDone}/${totalProducts} ürün tamamen bitti`
     : `Tamamlandı — ${productsFullyDone}/${totalProducts} ürün`;
   updateExportTab();
+  reportRunAbort();
 }
 $('fullRunBtn').addEventListener('click', runFullPipeline);
-$('fullStopBtn').addEventListener('click', ()=>{
-  runStopRequested = true;
-  $('fullStopBtn').disabled = true;
-  $('fullStopBtn').textContent = '⏳ Durduruluyor…';
-});
+$('fullStopBtn').addEventListener('click', requestStop);
 
 
 /* ---------- Export ---------- */
 $('exportGoPhotosBtn').addEventListener('click', ()=>{ goTab('products'); });
+$('exportOnlyComplete').addEventListener('change', updateExportTab);
 
 /* Vela şartı: medya linki .jpg/.png vb. ile bitmeli. Eski (uzantısız) serve-image linklerini /img/<id>.png biçimine çevirir. */
 const VALID_IMG_EXT = /\.(jpe?g|png|webp|gif)(\?.*)?$/i;
@@ -2250,14 +2437,20 @@ function canonicalCategory(p){
   return e ? e.path : c;
 }
 
-function buildVelaAoa(){
+/* "Sadece tamamlananlar" işaretliyse yalnızca metni + tüm fotoğrafları hazır ürünler; değilse hepsi */
+function exportListFor(products, photoCount){
+  const cb = document.getElementById('exportOnlyComplete');
+  return (cb && cb.checked) ? products.filter(p=>isProductComplete(p, photoCount)) : products;
+}
+function exportList(){ return exportListFor(state.products, parseInt($('d_photocount').value) || 0); }
+function buildVelaAoa(list){
   const defaults = {
     whomade: $('d_whomade').value, whatisit: $('d_whatisit').value, whenmade: $('d_whenmade').value,
     renewal: $('d_renewal').value, producttype: $('d_producttype').value, prodpartner: $('d_prodpartner').value,
     shipping: $('d_shipping').value, returnpolicy: $('d_return').value
   };
   const aoa = [VELA_HEADERS];
-  state.products.forEach(p=>{
+  (list || exportList()).forEach(p=>{
     const photos = Array.from({length:MAX_PHOTOS}, (_, i)=> normalizePhotoUrl((p.finalUrls||[])[i]));
     photos[0] = photos[0] || p.sourceImageUrl || '';
     aoa.push([
@@ -2276,19 +2469,21 @@ function buildVelaAoa(){
 }
 
 /* İndirmeden önce sorunları topla; tek bir onay penceresinde göster */
-function exportPreflight(){
-  const n = state.products.length;
+function exportPreflight(list){
+  list = list || exportList();
+  const n = list.length;
+  if(!n){ alert('Aktarılacak ürün yok: "Sadece tamamlanan ürünleri aktar" işaretli ama henüz metni ve fotoğrafları tamamen hazır ürün yok. İşareti kaldır ya da işi tamamla.'); return false; }
   const issues = [];
-  const notDone = state.products.filter(p=>p.status!=='done').length;
+  const notDone = list.filter(p=>p.status!=='done').length;
   if(notDone) issues.push(`${notDone}/${n} ürünün metni (başlık/açıklama/tag/kategori) henüz üretilmemiş ya da hatalı.`);
-  const noPhotoEdit = state.products.filter(p=>photoEditedCount(p)===0).length;
+  const noPhotoEdit = list.filter(p=>photoEditedCount(p)===0).length;
   if(noPhotoEdit) issues.push(`${noPhotoEdit}/${n} üründe hiç foto düzenlemesi yok — Photo 1'de orijinal Etsy fotoğrafı olacak, diğer Photo kolonları boş kalacak.`);
-  const catBad = state.products.filter(p=>{ const st = categoryState(p); return st==='empty' || st==='invalid'; }).length;
+  const catBad = list.filter(p=>{ const st = categoryState(p); return st==='empty' || st==='invalid'; }).length;
   if(catBad) issues.push(`${catBad}/${n} ürünün kategorisi boş ya da Etsy tablonda yok — Vela bu satırlarda hata gösterebilir.`);
-  const catUnsure = state.products.filter(p=>{ const st = categoryState(p); return st==='low' || st==='snap'; }).length;
+  const catUnsure = list.filter(p=>{ const st = categoryState(p); return st==='low' || st==='snap'; }).length;
   if(catUnsure) issues.push(`${catUnsure} ürünün kategorisinde AI emin değil (⚠) — indirmeden önce kontrol etmeni öneririm.`);
   let badExt = 0;
-  state.products.forEach(p=>{ Array.from({length:MAX_PHOTOS},(_,i)=>i).forEach(s=>{ const u = normalizePhotoUrl(p.finalUrls[s]); if(u && !VALID_IMG_EXT.test(u)) badExt++; }); });
+  list.forEach(p=>{ Array.from({length:MAX_PHOTOS},(_,i)=>i).forEach(s=>{ const u = normalizePhotoUrl(p.finalUrls[s]); if(u && !VALID_IMG_EXT.test(u)) badExt++; }); });
   if(badExt) issues.push(`${badExt} foto linkinin sonunda .jpg/.png yok — Vela medya linklerini bu uzantılarla ister, bunları reddeder.`);
   if(!issues.length) return true;
   return confirm('Dikkat:\n\n' + issues.map(t=>'• '+t).join('\n') + '\n\nYine de indirmek istiyor musun?\n\n"Tamam" — böyle indir\n"İptal" — önce düzelteyim');
@@ -2310,26 +2505,35 @@ function downloadBlob(blob, filename){
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
 
-$('exportCsvBtn').addEventListener('click', ()=>{
-  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
-  if(!exportPreflight()) return;
-  const csv = aoaToCsv(buildVelaAoa());
-  const bom = $('csvBom').checked ? '﻿' : '';
-  downloadBlob(new Blob([bom + csv], {type:'text/csv;charset=utf-8'}), 'vela-export.csv');
-  setPill(4,'done');
-  updateCurrentJob();
-});
-
-$('exportBtn').addEventListener('click', ()=>{
-  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
-  if(!exportPreflight()) return;
-  const ws = XLSX.utils.aoa_to_sheet(buildVelaAoa());
+/* Bir ürün listesini CSV / xlsx olarak indirir (açık iş de, geçmişteki işler de aynı yolu kullanır) */
+const curPhotoCount = ()=> parseInt($('d_photocount').value) || 0;
+function runExportCsv(products, photoCount, filename){
+  if(!products.length){ alert('Bu işte ürün yok.'); return false; }
+  const list = exportListFor(products, photoCount);
+  if(!exportPreflight(list)) return false;
+  const csv = aoaToCsv(buildVelaAoa(list));
+  const bom = $('csvBom').checked ? '\uFEFF' : '';
+  downloadBlob(new Blob([bom + csv], {type:'text/csv;charset=utf-8'}), filename);
+  return true;
+}
+function runExportXlsx(products, photoCount, filename){
+  if(!products.length){ alert('Bu işte ürün yok.'); return false; }
+  const list = exportListFor(products, photoCount);
+  if(!exportPreflight(list)) return false;
+  const ws = XLSX.utils.aoa_to_sheet(buildVelaAoa(list));
   ws['!cols'] = VELA_HEADERS.map(()=>({wch:18}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Vela Template');
-  XLSX.writeFile(wb, 'vela-export.xlsx');
-  setPill(4,'done');
-  updateCurrentJob();
+  XLSX.writeFile(wb, filename);
+  return true;
+}
+$('exportCsvBtn').addEventListener('click', ()=>{
+  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
+  if(runExportCsv(state.products, curPhotoCount(), 'vela-export.csv')){ setPill(4,'done'); updateCurrentJob(); }
+});
+$('exportBtn').addEventListener('click', ()=>{
+  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
+  if(runExportXlsx(state.products, curPhotoCount(), 'vela-export.xlsx')){ setPill(4,'done'); updateCurrentJob(); }
 });
 
 /* ZIP: düzenlenmiş fotoğraflar (bellekteki veri ya da hosted linkten) + vela-export.xlsx */
@@ -2349,23 +2553,25 @@ function fileSlug(s){
     .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40) || 'urun';
 }
 
-$('exportZipBtn').addEventListener('click', async ()=>{
-  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
-  if(typeof JSZip === 'undefined'){ alert('ZIP kütüphanesi yüklenemedi (internet bağlantısını kontrol edip sayfayı yenile).'); return; }
-  if(!exportPreflight()) return;
-  const btn = $('exportZipBtn');
-  const label = btn.textContent;
-  btn.disabled = true;
+/* ZIP: seçili ürünlerin fotoğrafları (bellekteki veri ya da host edilmiş linkten) + vela xlsx */
+async function runExportZip(products, photoCount, filename, btn){
+  if(!products.length){ alert('Bu işte ürün yok.'); return false; }
+  if(typeof JSZip === 'undefined'){ alert('ZIP kütüphanesi yüklenemedi (internet bağlantısını kontrol edip sayfayı yenile).'); return false; }
+  const list = exportListFor(products, photoCount);
+  if(!exportPreflight(list)) return false;
+  const label = btn ? btn.textContent : '';
+  if(btn) btn.disabled = true;
+  const say = (t)=>{ if(btn) btn.textContent = t; };
   try{
     const zip = new JSZip();
     const folder = zip.folder('photos');
     let added = 0, skipped = 0, done = 0;
-    const total = state.products.reduce((n,p)=> n + Array.from({length:MAX_PHOTOS},(_,i)=>i).filter(s=>p.editedImages[s] || p.finalUrls[s]).length, 0);
-    for(let i=0;i<state.products.length;i++){
-      const p = state.products[i];
+    const total = list.reduce((n,p)=> n + Array.from({length:MAX_PHOTOS},(_,i)=>i).filter(s=>p.editedImages[s] || p.finalUrls[s]).length, 0);
+    for(const p of list){
+      const i = products.indexOf(p);
       for(let s=0;s<MAX_PHOTOS;s++){
         if(!(p.editedImages[s] || p.finalUrls[s])) continue;
-        btn.textContent = `⏳ Fotoğraflar toplanıyor… ${done}/${total}`;
+        say(`⏳ Fotoğraflar toplanıyor… ${done}/${total}`);
         let bytes = null, mime = 'image/png';
         try{
           if(p.editedImages[s]){
@@ -2387,24 +2593,55 @@ $('exportZipBtn').addEventListener('click', async ()=>{
         }
       }
     }
-    btn.textContent = '⏳ xlsx hazırlanıyor…';
-    const ws = XLSX.utils.aoa_to_sheet(buildVelaAoa());
+    say('⏳ xlsx hazırlanıyor…');
+    const ws = XLSX.utils.aoa_to_sheet(buildVelaAoa(list));
     ws['!cols'] = VELA_HEADERS.map(()=>({wch:18}));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Vela Template');
     zip.file('vela-export.xlsx', XLSX.write(wb, {bookType:'xlsx', type:'array'}));
-    btn.textContent = '⏳ ZIP oluşturuluyor…';
+    say('⏳ ZIP oluşturuluyor…');
     // JPG/PNG zaten sıkışık: STORE ile hızlı ve bellek dostu
     const blob = await zip.generateAsync({type:'blob', compression:'STORE'});
-    downloadBlob(blob, 'vela-export.zip');
-    setPill(4,'done');
-    updateCurrentJob();
+    downloadBlob(blob, filename);
     if(skipped) alert(`ZIP indirildi: ${added} fotoğraf eklendi, ${skipped} fotoğraf alınamadı (bellekte yok ve linkten de indirilemedi).`);
+    return true;
   }catch(err){
     alert('ZIP oluşturulamadı: ' + err.message);
+    return false;
   }finally{
-    btn.disabled = false;
-    btn.textContent = label;
+    if(btn){ btn.disabled = false; btn.textContent = label; }
+  }
+}
+$('exportZipBtn').addEventListener('click', async ()=>{
+  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
+  if(await runExportZip(state.products, curPhotoCount(), 'vela-export.zip', $('exportZipBtn'))){ setPill(4,'done'); updateCurrentJob(); }
+});
+
+/* Geçmiş yedeği: tüm işleri tek dosyaya al / geri yükle (başka tarayıcıya ya da bilgisayara taşımak için) */
+$('historyBackupBtn').addEventListener('click', ()=>{
+  try{ flushCurrentJob(); }catch(e){}
+  const jobs = loadJobs();
+  if(!jobs.length){ alert('Yedeklenecek geçmiş yok.'); return; }
+  const data = { app:'etsy-vela-tool', kind:'history-backup', version:1, exportedAt:new Date().toISOString(), jobs };
+  downloadBlob(new Blob([JSON.stringify(data)], {type:'application/json'}), 'vela-gecmis-yedek.json');
+});
+$('historyRestoreBtn').addEventListener('click', ()=> $('historyRestoreFile').click());
+$('historyRestoreFile').addEventListener('change', async e=>{
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!f) return;
+  try{
+    const data = JSON.parse(await f.text());
+    if(!data || data.app !== 'etsy-vela-tool' || data.kind !== 'history-backup' || !Array.isArray(data.jobs)) throw new Error('Bu dosya bir geçmiş yedeği değil.');
+    const have = loadJobs();
+    const ids = new Set(have.map(j=>j.id));
+    const fresh = data.jobs.filter(j=> j && j.id && Array.isArray(j.products) && !ids.has(j.id));
+    const merged = have.concat(fresh).sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0)).slice(0, MAX_JOBS);
+    saveJobs(merged);
+    renderHistoryList();
+    alert(`Yedek yüklendi: ${fresh.length} iş eklendi, ${data.jobs.length - fresh.length} iş zaten vardı.`);
+  }catch(err){
+    alert('Yedek yüklenemedi: ' + err.message);
   }
 });
 
@@ -2451,6 +2688,76 @@ function updateCostHint(){
   $('imgCostHint').textContent = `Tahmini: ürün başına ${n} fotoğraf ≈ $${per.toFixed(2)}; 100 ürün ≈ $${(per*100).toFixed(0)}. (1K görsel, Google'ın yayımladığı fiyata göre; değişebilir. Metin üretimi ayrı ve çok daha ucuz.)`;
 }
 ['d_imgmodel','d_photocount'].forEach(id=> $(id).addEventListener('change', updateCostHint));
+
+/* ---------- Gemini harcama sayacı (tahmini) ----------
+   Google, API anahtarıyla kalan bakiyeyi okutmuyor; bu yüzden her başarılı çağrının tahmini ücreti burada sayılır.
+   Görsel: seçili modelin 1K fiyatı. Metin: yanıttaki token sayısı × (muhafazakâr) fiyat; token bilgisi yoksa çağrı başı sabit tutar. */
+const SPEND_KEY = 'etsy_vela_spend_v1';
+const TEXT_PRICE = { inPerTok: 1.5 / 1e6, outPerTok: 7.5 / 1e6, perCallFallback: 0.004 };
+let spend = { base: null, spent: 0, images: 0, imgUsd: 0, textCalls: 0, textUsd: 0, since: Date.now() };
+function loadSpend(){
+  try{ const o = JSON.parse(localStorage.getItem(SPEND_KEY) || 'null'); if(o && typeof o === 'object') spend = Object.assign(spend, o); }catch(e){}
+}
+function saveSpend(){ try{ localStorage.setItem(SPEND_KEY, JSON.stringify(spend)); }catch(e){} }
+function imgPriceNow(){ return IMG_PRICES[$('d_imgmodel').value] || IMG_PRICES['gemini-3.1-flash-image']; }
+function recordImageSpend(){
+  const usd = imgPriceNow();
+  spend.images++; spend.imgUsd += usd; spend.spent += usd;
+  saveSpend(); renderSpend();
+}
+function recordTextSpend(usage){
+  let usd = TEXT_PRICE.perCallFallback;
+  if(usage && (usage.promptTokenCount || usage.candidatesTokenCount)){
+    usd = (usage.promptTokenCount || 0) * TEXT_PRICE.inPerTok + ((usage.candidatesTokenCount || 0) + (usage.thoughtsTokenCount || 0)) * TEXT_PRICE.outPerTok;
+  }
+  spend.textCalls++; spend.textUsd += usd; spend.spent += usd;
+  saveSpend(); renderSpend();
+}
+function remainingUsd(){ return spend.base == null ? null : spend.base - spend.spent; }
+function fmtUsd(v){ const a = Math.abs(v); return (v < 0 ? '-' : '') + '$' + (a >= 100 ? a.toFixed(0) : a.toFixed(2)); }
+function renderSpend(){
+  const rem = remainingUsd();
+  let t = `Harcanan ≈ ${fmtUsd(spend.spent)}`;
+  t += rem == null ? ' · Kalan: bakiyeni gir' : ` · Kalan ≈ ${fmtUsd(rem)}`;
+  $('spendText').textContent = t;
+  const chip = $('spendChip');
+  chip.classList.toggle('bad', rem != null && rem <= 0);
+  chip.classList.toggle('warn', rem != null && rem > 0 && rem < 1);
+  $('spendDetail').textContent = `Sayaç (${formatJobDate(spend.since)} tarihinden beri): ${spend.images} görsel ≈ ${fmtUsd(spend.imgUsd)} + ${spend.textCalls} metin çağrısı ≈ ${fmtUsd(spend.textUsd)} = ${fmtUsd(spend.spent)}.` + (spend.base != null ? ` Girdiğin bakiye: ${fmtUsd(spend.base)}.` : ' Henüz bakiye girmedin.');
+}
+/* Bitmemiş işin tahmini maliyeti (kalan foto × görsel fiyatı + kalan metin × ortalama metin maliyeti) */
+function estimateCost(kind){
+  const w = pendingWork(kind);
+  const textAvg = spend.textCalls >= 3 ? spend.textUsd / spend.textCalls : 0.01;
+  return { usd: w.photos * imgPriceNow() + w.text * textAvg, w };
+}
+/* Tahmini bakiye işe yetmiyorsa başlamadan önce sor (bakiye girilmediyse hiç karışmaz) */
+function preRunCostCheck(kind){
+  const rem = remainingUsd();
+  if(rem == null) return true;
+  const e = estimateCost(kind);
+  if(e.usd <= rem) return true;
+  return confirm(`Dikkat: bu iş için tahmini maliyet ≈ ${fmtUsd(e.usd)} (${pendingLabel(e.w)}), tahmini kalan bakiyen ise ≈ ${fmtUsd(rem)}.\n\nBakiye yetmeyebilir. Bitince iş otomatik durur, o ana kadar hazır olanlar korunur; kredi ekleyince "Devam ettir" ile kaldığın yerden sürdürürsün.\n\nYine de başlatayım mı?`);
+}
+$('spendChip').addEventListener('click', ()=>{
+  const box = $('spendEdit');
+  const open = box.style.display === 'none';
+  box.style.display = open ? 'block' : 'none';
+  $('spendChip').setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(open){ const r = remainingUsd(); $('spendBalanceInput').value = r == null ? '' : Math.max(0, r).toFixed(2); $('spendBalanceInput').focus(); }
+});
+$('spendSaveBtn').addEventListener('click', ()=>{
+  const v = parseFloat(String($('spendBalanceInput').value).replace(',', '.'));
+  if(!isFinite(v) || v < 0){ alert('Geçerli bir tutar yaz (örn. 10.00).'); return; }
+  spend = { base: v, spent: 0, images: 0, imgUsd: 0, textCalls: 0, textUsd: 0, since: Date.now() };
+  saveSpend(); renderSpend();
+  $('spendEdit').style.display = 'none'; $('spendChip').setAttribute('aria-expanded', 'false');
+});
+$('spendResetBtn').addEventListener('click', ()=>{
+  if(!confirm('Bakiye ve harcama sayacı sıfırlanacak. Emin misin?')) return;
+  spend = { base: null, spent: 0, images: 0, imgUsd: 0, textCalls: 0, textUsd: 0, since: Date.now() };
+  saveSpend(); renderSpend();
+});
 function syncPhotoStyleUi(){
   const v = $('d_scene').value;
   $('sceneLifestyleNote').style.display = v === 'lifestyle' ? 'block' : 'none';
@@ -2524,6 +2831,7 @@ $('catmapResetBtn').addEventListener('click', ()=>{
 loadCategoryMap();
 renderHistoryList();
 syncPhotoPromptFieldsVisibility();
+loadSpend(); renderSpend(); syncRunUi();
 </script>
 </body>
 </html>
