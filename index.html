@@ -417,26 +417,77 @@ td{color:var(--text-2);}
     </div>
 
     <div class="panel">
-      <h2>Fotoğraf ayarları</h2>
-      <p class="desc">Ürün başına kaç fotoğraf varyasyonu üreteceğini seç. Aşağıya yazdığın prompt'lar <b>tüm ürünlere aynı şekilde uygulanır</b> — "Ürünler" sekmesindeki "Tüm fotoğrafları düzenle" butonuna bastığında, her ürünün kendi kaynak fotoğrafı bu talimatlara göre tek tek düzenlenir. (İstersen sonradan tek bir ürün için kart üzerinden ayrıca farklı bir prompt da deneyebilirsin.)</p>
-      <div class="field" style="max-width:220px;">
-        <label>Ürün başına fotoğraf sayısı</label>
-        <select id="d_photocount"><option value="1">1 fotoğraf</option><option value="2" selected>2 fotoğraf</option><option value="3">3 fotoğraf</option></select>
+      <h2>Fotoğraf stili</h2>
+      <p class="desc">Varsayılan olarak her şeyi AI yapar: ürüne bakıp ferah, aydınlık bir lifestyle sahnesi kurgular (açık yüzey, doğal ışık, 1-4 sade obje). Aynı ürünün tüm fotoğrafları aynı sahneyi kullanır; Foto 1 ana çekim, Foto 2 yakın çekim, Foto 3 uzak/geniş çekim ve farklı açıdır. İstersen sabit bir stüdyo fonu, kendi arka plan görselini ya da kendi prompt'unu seçebilirsin. Kalite kuralları her fotoğrafa otomatik eklenir: eklenen yazı/logo/filigran yok, ürün aynen korunur, sadece hafif rötuş.</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
+        <div class="field">
+          <label>Ürün başına fotoğraf sayısı</label>
+          <select id="d_photocount"><option value="1">1 fotoğraf</option><option value="2" selected>2 fotoğraf</option><option value="3">3 fotoğraf</option></select>
+        </div>
+        <div class="field">
+          <label>Arka plan / zemin</label>
+          <select id="d_scene">
+            <option value="lifestyle">Ferah lifestyle — AI sahne kurgular (önerilen)</option>
+            <option value="studio-white">Temiz beyaz stüdyo (sabit fon)</option>
+            <option value="custom-image">Kendi arka plan görselim (yükle)</option>
+            <option value="custom-text">Kendi prompt'um (yazıyla tarif)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Açılar / duruş</label>
+          <select id="d_angles">
+            <option value="auto">Otomatik — AI seçsin (önerilen)</option>
+            <option value="custom">Kendim yazacağım</option>
+          </select>
+        </div>
       </div>
-      <div style="margin-top:14px;">
+
+      <p id="sceneLifestyleNote" class="hint" style="display:none;font-size:12px;color:var(--text-2);margin-top:12px;max-width:680px;">AI her ürün için ürüne uygun bir sahne kurgusu yazar (yüzey, objeler, dizilim) ve o ürünün tüm fotoğraflarında aynısını kullanır. Kurguyu "Ürünler" sekmesinde ürün kartındaki AI bölümünde görüp düzenleyebilirsin. Tüm mağazalarda aynı "ferah, aydınlık" görünüm sabit kalır; objeler ürüne göre değişir.</p>
+      <div id="sceneBackdropPreview" style="display:none;align-items:center;gap:12px;margin-top:14px;">
+        <img id="sceneBackdropImg" alt="arka plan" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid #E4E7EC;">
+        <span class="hint" style="font-size:11.5px;color:var(--text-3);max-width:420px;">Gemini'ye ürün fotoğrafıyla birlikte verilecek arka plan. Ürün bu zeminin üstüne yerleştirilir.</span>
+      </div>
+
+      <div id="sceneCustomImageBox" style="display:none;margin-top:12px;">
+        <input type="file" id="sceneImageFile" accept="image/*" style="display:none;">
+        <button class="btn btn-ghost btn-sm" id="sceneImageBtn">📂 Arka plan görseli yükle</button>
+        <span id="sceneImageStatus" class="mono" style="margin-left:10px;font-size:12px;color:var(--text-2);"></span>
+        <p class="hint" style="font-size:11px;color:var(--text-3);margin-top:6px;">Boş bir zemin/fon fotoğrafı yükle (ürün olmayan, düz bir yüzey ya da stüdyo fonu). Küçültülüp bu tarayıcıda saklanır.</p>
+      </div>
+
+      <div id="sceneCustomTextBox" class="field" style="display:none;margin-top:12px;">
+        <label>Arka plan / sahne tarifi (tüm ürünlere aynı uygulanır)</label>
+        <textarea id="d_scenetext" style="min-height:64px;" placeholder="örn. Açık renk ahşap masa üstü, bulanık sıcak tonlu arka plan, yumuşak pencere ışığı"></textarea>
+        <span class="hint">Not: sadece yazıyla tarif edilen sahne her seferinde biraz farklı çıkabilir. Tutarlılık için hazır bir arka plan ya da görsel yüklemek daha güvenlidir.</span>
+      </div>
+
+      <div id="angleCustomBox" style="display:none;margin-top:14px;">
         <div class="field" data-photoprompt-field="0" style="margin-bottom:12px;">
-          <label>Fotoğraf 1 prompt'u (tüm ürünlere uygulanır)</label>
-          <textarea id="d_photoprompt_0" style="min-height:56px;" placeholder="örn. Beyaz stüdyo zemininde, yumuşak gölgeli, profesyonel ürün çekimi"></textarea>
+          <label>Fotoğraf 1 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_0" style="min-height:56px;" placeholder="örn. Karşıdan, düz, ürün ortada ve tamamı görünür"></textarea>
         </div>
         <div class="field" data-photoprompt-field="1" style="margin-bottom:12px;">
-          <label>Fotoğraf 2 prompt'u (tüm ürünlere uygulanır)</label>
-          <textarea id="d_photoprompt_1" style="min-height:56px;" placeholder="örn. Sıcak lifestyle sahnesi, doğal ışık, kullanım anında"></textarea>
+          <label>Fotoğraf 2 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_1" style="min-height:56px;" placeholder="örn. Hafif yandan ve biraz yukarıdan, 3/4 açı"></textarea>
         </div>
         <div class="field" data-photoprompt-field="2" style="margin-bottom:12px;">
-          <label>Fotoğraf 3 prompt'u (tüm ürünlere uygulanır)</label>
-          <textarea id="d_photoprompt_2" style="min-height:56px;" placeholder="örn. Minimal mockup üzerinde, pastel arka plan"></textarea>
+          <label>Fotoğraf 3 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_2" style="min-height:56px;" placeholder="örn. Yakın çekim, malzeme ve detay"></textarea>
         </div>
       </div>
+
+      <label style="display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:12.5px;color:var(--text-2);cursor:pointer;max-width:640px;">
+        <input type="checkbox" id="d_ref1" checked style="margin-top:2px;">
+        <span>Foto 2 ve 3'ü üretirken Foto 1'i de referans ver <b>(önerilen)</b> — aynı ürünün fotoğrafları aynı yüzeyde, ışıkta ve tonda olur. Foto 2/3 sırayla, Foto 1'den sonra üretilir.</span>
+      </label>
+    </div>
+
+    <div class="panel">
+      <h2>Mağaza profili (10 mağaza için aynı stil)</h2>
+      <p class="desc">Bu sayfadaki tüm ayarlar (fotoğraf stili, sabit alanlar, prompt'lar) <b>otomatik kaydedilir</b>; sayfayı kapatıp açsan da aynı kalır. Her mağazada aynı fotoğraf stilini kullanırsan fotoğrafların hepsi benzer kalitede ve görünümde çıkar. Başka bir bilgisayara/tarayıcıya taşımak ya da yedeklemek için profili dosyaya aktarabilirsin. <span class="mono">API anahtarı profile dahil değildir.</span></p>
+      <input type="file" id="profileFile" accept=".json,application/json" style="display:none;">
+      <button class="btn btn-ghost btn-sm" id="profileExportBtn">⬇ Profili dosyaya aktar</button>
+      <button class="btn btn-ghost btn-sm" id="profileImportBtn">📂 Profil dosyası yükle</button>
     </div>
   </div>
 
@@ -444,7 +495,7 @@ td{color:var(--text-2);}
   <div class="tabpanel" id="tab-products">
     <div class="panel" id="fullRunPanel" style="border-color:#C7D2FE;background:var(--accent-soft);">
       <h2>▶ Hepsini çalıştır (önerilen)</h2>
-      <p class="desc">Tek tıkla: önce her ürün için title/description/kategori/tag üretir, sonra "Ayarlar & AI"da girdiğin genel foto prompt'larıyla tüm fotoğrafları düzenler. İstediğin an durdurabilir, kaldığın yerden devam edebilir ya da o ana kadar bitenlerle export alabilirsin.</p>
+      <p class="desc">Tek tıkla: önce her ürün için title/description/kategori/tag üretir, sonra "Ayarlar & AI"da seçtiğin foto stiliyle (sabit arka plan + açılar) tüm fotoğrafları düzenler. İstediğin an durdurabilir, kaldığın yerden devam edebilir ya da o ana kadar bitenlerle export alabilirsin.</p>
       <button class="btn btn-primary" id="fullRunBtn">▶ Hepsini Çalıştır</button>
       <button class="btn btn-ghost" id="fullStopBtn" style="display:none;">⏹ Durdur</button>
       <span id="fullRunStatus" class="mono" style="margin-left:12px;font-size:12.5px;color:var(--text-2);"></span>
@@ -466,7 +517,7 @@ td{color:var(--text-2);}
 
     <div class="panel" id="photoEditPanel">
       <h2>Sadece fotoğrafları düzenle <span class="mono" style="font-size:11px;font-weight:400;color:var(--text-3);">(ayrı çalıştırmak istersen)</span></h2>
-      <p class="desc">"Ayarlar &amp; AI" sekmesinde girdiğin genel foto prompt'larını <b>tüm ürünlere</b> tek seferde uygular — her ürünün kendi kaynak fotoğrafı, aynı talimatlarla tek tek düzenlenir. İstediğin an durdurabilir, kaldığın yerden devam edebilirsin.</p>
+      <p class="desc">"Ayarlar &amp; AI" sekmesinde seçtiğin foto stilini (sabit arka plan + açılar) <b>tüm ürünlere</b> tek seferde uygular — her ürünün kendi kaynak fotoğrafı, aynı arka planla tek tek düzenlenir. İstediğin an durdurabilir, kaldığın yerden devam edebilirsin.</p>
       <button class="btn btn-primary" id="photoEditAllBtn">🎨 Tüm fotoğrafları düzenle</button>
       <button class="btn btn-ghost" id="photoStopBtn" style="display:none;">⏹ Durdur</button>
       <span id="photoEditStatus" class="mono" style="margin-left:12px;font-size:12.5px;color:var(--text-3);"></span>
@@ -1029,13 +1080,13 @@ async function importCategoryFile(file){
 }
 
 /* ---------- Gemini text calls ---------- */
-async function callGeminiText(promptText){
+async function callGeminiText(promptText, image){
   const apiKey = $('geminiKey').value.trim();
   if(!apiKey) throw new Error('Gemini API key girilmemiş — "Ayarlar & AI" sekmesinden ekle.');
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ contents:[{ parts:[{ text: promptText }] }] })
+    body: JSON.stringify({ contents:[{ parts:[{ text: promptText }].concat(image ? [{ inline_data:{ mime_type:image.mime, data:image.data } }] : []) }] })
   });
   if(!res.ok){
     const errBody = await res.text().catch(()=> '');
@@ -1264,11 +1315,150 @@ function fileToBase64(file){
     reader.readAsDataURL(file);
   });
 }
-async function callGeminiEdit(base64Data, mimeType, promptText, apiKey){
+/* ---------- Foto stili: sabit arka plan + açılar + kalite kuralları ---------- */
+const PHOTO_QUALITY_RULES = 'Square 1:1 composition. The product is the clear hero: sharp focus, fully recognizable and well lit (close-up shots excepted), photorealistic marketplace-ready quality with soft natural shadows. ABSOLUTELY NO added text, letters, logos, brand names, labels, captions, watermarks or borders anywhere in the image; the product\'s own printing, engraving, patterns and design must stay exactly as they are in the original photo. Props must be plain and unbranded (no printed text, logos or labels on them) and must never hide or overpower the product. Do NOT change the product\'s shape, proportions, color, material or design details. LIGHT RETOUCH ONLY: if the product looks rough, wrinkled, dusty, scuffed or unevenly lit in the original, you may subtly clean it up (smooth wrinkles, remove dust or tiny blemishes, even out the lighting) but never alter its real texture, never hide genuine defects a buyer should know about, and never make it look like a different material or quality.';
+const LIFESTYLE_LOOK = 'Bright, airy, cheerful lifestyle product photography: light neutral surfaces (cream, off-white, light stone, pale wood or linen), soft natural window light, gentle low-contrast shadows, a warm and inviting feel, clean and uncluttered styling like top-selling Etsy listings. The same airy look in every photo.';
+const PHOTO_SCENES = {
+  'studio-white': { text:'Clean seamless pure-white studio backdrop; a very light grey floor fades softly into the wall; soft diffused studio lighting from the upper left.', wall:['#FFFFFF','#F4F4F5'], floor:['#EFEFF0','#FAFAFA'] }
+};
+const AUTO_ANGLES = [
+  'MAIN LISTING PHOTO (medium distance): the product as the clear hero of the styled scene, shown from its most attractive natural angle and completely visible.',
+  'CLOSE-UP: a tight close-up of the same product that highlights its material, texture and craftsmanship, with the softly blurred background and surface of the same scene.',
+  'WIDE SHOT FROM A DIFFERENT ANGLE: a farther, wider view of the same scene from a different camera angle (for example top-down or a high three-quarter view) that shows the product together with more of its surroundings. Only show sides of the product that are plausible from the original photo.'
+];
+const SCENE_IMG_KEY = 'etsy_vela_scene_image_v1';
+let sceneCustomImage = '';
+const backdropCache = {};
+
+/* Hazır arka planı canvas ile üretir: her mağazada/tarayıcıda birebir aynı görsel */
+function makeBackdropDataUrl(key){
+  if(backdropCache[key]) return backdropCache[key];
+  const sc = PHOTO_SCENES[key], S = 1024, horizon = Math.round(S*0.58);
+  const c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  let gr = g.createLinearGradient(0,0,0,horizon);
+  gr.addColorStop(0, sc.wall[0]); gr.addColorStop(1, sc.wall[1]);
+  g.fillStyle = gr; g.fillRect(0,0,S,horizon);
+  gr = g.createLinearGradient(0,horizon,0,S);
+  gr.addColorStop(0, sc.floor[0]); gr.addColorStop(1, sc.floor[1]);
+  g.fillStyle = gr; g.fillRect(0,horizon,S,S-horizon);
+  gr = g.createLinearGradient(0,horizon-40,0,horizon+40);
+  gr.addColorStop(0,'rgba(255,255,255,0)'); gr.addColorStop(.5,'rgba(255,255,255,0.18)'); gr.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0,horizon-40,S,80);
+  gr = g.createRadialGradient(S/2,S*0.55,S*0.25,S/2,S*0.55,S*0.8);
+  gr.addColorStop(0,'rgba(0,0,0,0)'); gr.addColorStop(1,'rgba(0,0,0,0.05)');
+  g.fillStyle = gr; g.fillRect(0,0,S,S);
+  return (backdropCache[key] = c.toDataURL('image/jpeg', 0.92));
+}
+function splitDataUrl(u){
+  const m = String(u||'').match(/^data:([^;,]+)[^,]*;base64,(.*)$/s);
+  return m ? { mime: m[1], data: m[2] } : null;
+}
+function resizeImageToDataUrl(file, max){
+  max = max || 1024;
+  return new Promise((resolve, reject)=>{
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      const r = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width*r); c.height = Math.round(img.height*r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', 0.9));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('Görsel okunamadı')); };
+    img.src = url;
+  });
+}
+
+/* Seçili sahneyi çöz: { text, backdrop:{mime,data}|null } — eksikse net hata */
+function resolveScene(){
+  const v = $('d_scene').value;
+  if(v === 'lifestyle') return { text: LIFESTYLE_LOOK, backdrop: null, lifestyle: true };
+  if(PHOTO_SCENES[v]) return { text: PHOTO_SCENES[v].text, backdrop: splitDataUrl(makeBackdropDataUrl(v)) };
+  if(v === 'custom-image'){
+    const bd = splitDataUrl(sceneCustomImage);
+    if(!bd) throw new Error('Arka plan görseli yüklenmemiş — "Ayarlar & AI → Fotoğraf stili" bölümünden bir görsel yükle ya da hazır bir arka plan seç.');
+    return { text: '', backdrop: bd };
+  }
+  const t = ($('d_scenetext').value || '').trim();
+  if(!t) throw new Error('Sahne tarifi boş — "Ayarlar & AI → Fotoğraf stili" bölümüne yaz ya da hazır bir arka plan seç.');
+  return { text: t, backdrop: null };
+}
+/* Bu fotoğrafın açısı: ürüne özel yazıldıysa o; yoksa "kendim yazacağım" modundaki genel; yoksa otomatik */
+function effectiveAngle(p, s){
+  const own = ((p.photoPrompts && p.photoPrompts[s]) || '').trim();
+  if(own) return own;
+  if($('d_angles').value === 'custom'){
+    const g = ($('d_photoprompt_'+s) ? $('d_photoprompt_'+s).value : '').trim();
+    if(g) return g;
+  }
+  return AUTO_ANGLES[Math.min(s, AUTO_ANGLES.length-1)];
+}
+/* Foto 1 sonucu (bellekte ya da host edilmiş linkten) — Foto 2/3 için referans */
+async function getAnchorImage(p){
+  try{
+    if(p.editedImages[0]){ const d = splitDataUrl(p.editedImages[0]); if(d) return d; }
+    if(p.finalUrls[0]){
+      const r = await fetch(normalizePhotoUrl(p.finalUrls[0]));
+      if(r.ok){
+        const blob = await r.blob();
+        const dataUrl = await new Promise((res, rej)=>{ const fr = new FileReader(); fr.onload = ()=>res(fr.result); fr.onerror = ()=>rej(new Error('okunamadı')); fr.readAsDataURL(blob); });
+        return splitDataUrl(dataUrl);
+      }
+    }
+  }catch(e){ /* referans alınamazsa sahne yine arka plan görselinden gelir */ }
+  return null;
+}
+/* AI sanat yönetmeni: ürüne bakıp bir kez sahne kurgusu yazar; ürünün tüm fotoğrafları aynısını kullanır */
+async function getSceneBrief(p, base64Data, mimeType){
+  if((p.sceneBrief || '').trim()) return p.sceneBrief.trim();
+  const label = (p.title || guessRawTitle(p.rawRow) || '').trim();
+  const prompt = `You are an art director for top-selling Etsy product photography. Look at the product photo${label ? ` (product: "${label}"${p.category ? ', category: '+p.category : ''})` : ''} and design ONE scene brief that shows this exact product off beautifully in a bright, airy, cheerful lifestyle setting.
+Return ONLY a JSON object: {"surface":"...","props":"...","arrangement":"...","light":"..."}
+Rules: bright airy neutral palette (cream, off-white, light stone, pale wood, linen). "props": 1-4 plain, unbranded, text-free props that support how the product is used, gifted or displayed, or an empty string if none fit; they must never overpower the product. "arrangement": how the product (and, only if it makes sense, 2-3 copies or variants of it) is placed. No text, logos or brand names on anything. Do not invent features the product does not have. Each value in English, under 25 words.`;
+  try{
+    const text = await callGeminiText(prompt, { data: base64Data, mime: mimeType });
+    const o = JSON.parse(text.replace(/```json|```/g,'').trim());
+    const parts = [];
+    if(o.surface) parts.push('Surface: ' + o.surface);
+    if(o.props) parts.push('Props: ' + o.props);
+    if(o.arrangement) parts.push('Arrangement: ' + o.arrangement);
+    if(o.light) parts.push('Light: ' + o.light);
+    if(parts.length){ p.sceneBrief = parts.join(' | '); return p.sceneBrief; }
+  }catch(e){ /* kurgu yazılamazsa genel talimatla devam edilir */ }
+  return '';
+}
+function buildPhotoPrompt(p, slotIdx, scene, hasAnchor){
+  const label = (p.title || guessRawTitle(p.rawRow) || '').trim();
+  let n = 1; const idx = { product: 1 };
+  if(scene.backdrop) idx.backdrop = ++n;
+  if(hasAnchor) idx.anchor = ++n;
+  const L = [];
+  L.push('You are a professional e-commerce product photographer preparing a marketplace listing photo.');
+  L.push(`Image ${idx.product} is the ORIGINAL product photo.${label ? ` The product is "${label}"${p.category ? ' (category: '+p.category+')' : ''}.` : ''} Reproduce this exact product: same shape, proportions, colors, materials, patterns, text and details. Never redesign it, never add or remove parts, never turn it into a different product, and never put it in a scene that is unrelated or misleading for what the product is.`);
+  if(scene.backdrop) L.push(`Image ${idx.backdrop} is the BACKDROP (background wall and floor). Place the product on exactly this backdrop and keep the same background color, floor surface and lighting. Do not restyle or change the backdrop.`);
+  if(scene.lifestyle){
+    L.push(`SCENE (the SAME scene in every photo of this product): ${scene.text} ${scene.brief ? 'Scene brief for this product: ' + scene.brief + '.' : 'Choose a fitting light surface and 1-3 simple, unbranded, text-free props that support how the product is used or gifted.'}`);
+  }else if(scene.text){
+    L.push(`SCENE (identical in every photo of every listing): ${scene.text}`);
+  }
+  if(hasAnchor) L.push(`Image ${idx.anchor} is photo #1 of this same listing. Match its background, floor, lighting, color tone and shadow style exactly; only the camera angle / product pose changes, as described below.`);
+  L.push(`ANGLE FOR THIS PHOTO: ${effectiveAngle(p, slotIdx)}`);
+  L.push(`QUALITY RULES (always apply): ${PHOTO_QUALITY_RULES}`);
+  return L.join('\n\n');
+}
+/* Toplu çalıştırmadan önce sahne eksikse erken uyar */
+function validatePhotoStyle(){
+  try{ resolveScene(); return true; }
+  catch(err){ alert(err.message); goTab('settings'); return false; }
+}
+
+async function callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages){
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
-      contents:[{ parts:[ {text: promptText}, {inline_data:{mime_type:mimeType, data:base64Data}} ] }],
+      contents:[{ parts:[ {text: promptText}, {inline_data:{mime_type:mimeType, data:base64Data}} ].concat((extraImages||[]).map(e=>({inline_data:{mime_type:e.mime, data:e.data}}))) }],
       generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
     })
   });
@@ -1373,13 +1563,14 @@ async function editSlot(p, slotIdx, card, manualFile){
       const r = await urlToBase64(p.sourceImageUrl);
       base64Data = r.dataUrl.split(',')[1]; mimeType = r.mimeType;
     }
-    const styleInstruction = p.photoPrompts[slotIdx] || 'Bu ürün fotoğrafını profesyonel bir e-ticaret çekimi gibi iyileştir.';
-    const productLabel = (p.title || guessRawTitle(p.rawRow) || '').trim();
-    const contextLine = productLabel
-      ? `Bu fotoğraf şu ürüne ait: "${productLabel}"${p.category ? ' (Kategori: '+p.category+')' : ''}. Fotoğrafı düzenlerken ürünün ne olduğunu ve ne için kullanıldığını göz önünde bulundur, ürünle alakasız veya yanıltıcı bir sahneye dönüştürme.\n\n`
-      : '';
-    const promptText = contextLine + styleInstruction;
-    const resultDataUrl = await callGeminiEdit(base64Data, mimeType, promptText, apiKey);
+    const scene = resolveScene();
+    if(scene.lifestyle) scene.brief = await getSceneBrief(p, base64Data, mimeType);
+    const anchor = (slotIdx > 0 && $('d_ref1').checked) ? await getAnchorImage(p) : null;
+    const extraImages = [];
+    if(scene.backdrop) extraImages.push(scene.backdrop);
+    if(anchor) extraImages.push(anchor);
+    const promptText = buildPhotoPrompt(p, slotIdx, scene, !!anchor);
+    const resultDataUrl = await callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages);
     p.editedImages[slotIdx] = resultDataUrl;
     p.photoStatus[slotIdx] = 'done';
     // auto-host the edited image so it becomes a real link for Vela's Photo columns
@@ -1495,7 +1686,7 @@ function renderProducts(){
           </div>
 
           <div class="drawer">
-            <button class="drawer-toggle" data-drawer-toggle="${p.id}"><span>✦ AI prompt'ları (başlık, açıklama, tag, section, ${photoCount} fotoğraf)</span><span class="chev">▾</span></button>
+            <button class="drawer-toggle" data-drawer-toggle="${p.id}"><span>✦ AI talimatları (başlık, açıklama, tag, section, sahne, ${photoCount} fotoğraf)</span><span class="chev">▾</span></button>
             <div class="drawer-body ${openDrawers.has(p.id)?'open':''}" data-pid="${p.id}">
               <div class="promptfield">
                 <div class="plabel"><span>Başlık talimatı</span></div>
@@ -1512,6 +1703,10 @@ function renderProducts(){
               <div class="promptfield">
                 <div class="plabel"><span>Section talimatı ${p.sectionPrompt ? '(bu ürüne özel)' : '(genel talimat kullanılıyor)'}</span></div>
                 <textarea data-field="sectionPrompt" placeholder="Boş bırakırsan Ayarlar'daki genel Section talimatı kullanılır.">${escapeHtml(p.sectionPrompt || '')}</textarea>
+              </div>
+              <div class="promptfield">
+                <div class="plabel"><span>Sahne kurgusu (fotoğraflar için — AI yazar, istersen düzenle)</span></div>
+                <textarea data-field="sceneBrief" placeholder="Boş bırakırsan ilk fotoğraf üretilirken AI bu ürüne uygun bir sahne kurgusu yazar (İngilizce). Kendin yazarsan tüm fotoğraflarda o kullanılır.">${escapeHtml(p.sceneBrief||'')}</textarea>
               </div>
               <button class="btn btn-xs btn-soft" data-regen-text style="margin-bottom:14px;">↻ Başlık + açıklama + tag + section'ı yeniden üret</button>
               ${Array.from({length:photoCount}).map((_,slotIdx)=>renderPhotoSlot(p, slotIdx)).join('')}
@@ -1655,10 +1850,10 @@ function renderPhotoSlot(p, slotIdx){
   if(result) resultHtml = `<img src="${result}">`;
   return `
     <div class="photoslot" data-slot="${slotIdx}">
-      <div class="photoslot-head"><span>Fotoğraf ${slotIdx+1} prompt'u</span></div>
+      <div class="photoslot-head"><span>Fotoğraf ${slotIdx+1} açı / duruş talimatı (isteğe bağlı)</span></div>
       <div class="photoslot-body">
         <div>
-          <textarea data-photo-prompt="${slotIdx}" placeholder="örn. Beyaz stüdyo zemininde, yumuşak gölgeli ürün çekimi">${escapeHtml(p.photoPrompts[slotIdx]||'')}</textarea>
+          <textarea data-photo-prompt="${slotIdx}" placeholder="Boş bırak: Ayarlar'daki otomatik/genel açı kullanılır. Yazarsan sadece bu ürünün bu fotoğrafının açısı değişir.">${escapeHtml(p.photoPrompts[slotIdx]||'')}</textarea>
           <div class="photoslot-actions">
             <button class="btn btn-xs btn-primary" data-edit-slot="${slotIdx}" ${status==='loading'?'disabled':''}>🎨 Gemini ile düzenle</button>
             ${p.editedImages[slotIdx] ? `<a class="btn btn-xs btn-ghost" download="foto-${p.id}-${slotIdx+1}.png" href="${p.editedImages[slotIdx]}">⬇ İndir</a>` : ''}
@@ -1726,11 +1921,7 @@ function setPhotoRunning(isRunning){
 async function runAllPhotoEdits(){
   if(!guardNotRunning()) return;
   const photoCount = parseInt($('d_photocount').value);
-  const globalPrompts = Array.from({length:photoCount}, (_,i)=> ($('d_photoprompt_'+i) ? $('d_photoprompt_'+i).value : ''));
-  // apply the general prompts to every product's matching slot before running
-  state.products.forEach(p=>{
-    for(let s=0;s<photoCount;s++) p.photoPrompts[s] = globalPrompts[s];
-  });
+  if(!validatePhotoStyle()) return;
   renderProducts();
 
   const tasks = [];
@@ -1776,14 +1967,13 @@ function setFullRunning(isRunning){
 }
 async function runFullPipeline(){
   if(!guardNotRunning()) return;
+  if(!validatePhotoStyle()) return;
   runStopRequested = false;
   setFullRunning(true);
   setGlobalRun(true, 'Başlıyor…');
   setPill(2,'active');
 
   const photoCount = parseInt($('d_photocount').value);
-  const globalPrompts = Array.from({length:photoCount}, (_,i)=> ($('d_photoprompt_'+i) ? $('d_photoprompt_'+i).value : ''));
-  state.products.forEach(p=>{ for(let s=0;s<photoCount;s++) p.photoPrompts[s] = globalPrompts[s]; });
 
   // total work = 1 "text" step per not-yet-done product + 1 step per not-yet-done photo slot
   let grandTotal = 0;
@@ -2054,7 +2244,94 @@ $('exportZipBtn').addEventListener('click', async ()=>{
   $(id).addEventListener('change', ()=>{ applyDefaultsToProducts(); renderProducts(); updateCurrentJob(); });
 });
 
+/* ---------- Ayarları kaydet / mağaza profili ---------- */
+const SETTINGS_KEY = 'etsy_vela_settings_v1';
+function settingEls(){
+  return [...document.querySelectorAll('[id^="d_"]')].filter(el=> ['INPUT','SELECT','TEXTAREA'].includes(el.tagName) && el.type !== 'file');
+}
+function readSetting(el){ return el.type === 'checkbox' ? String(el.checked) : el.value; }
+function writeSetting(el, v){
+  if(el.type === 'checkbox'){ el.checked = (v === true || v === 'true'); return; }
+  if(el.tagName === 'SELECT' && ![...el.options].some(o=>o.value === String(v))) return; // geçersiz seçenek
+  el.value = v;
+}
+function saveSettingEl(el){
+  try{
+    const st = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    st[el.id] = readSetting(el);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(st));
+  }catch(e){ /* depolama yoksa ayar sadece bu oturumda kalır */ }
+}
+function restoreSettings(){
+  try{
+    const st = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    settingEls().forEach(el=>{ if(el.id in st) writeSetting(el, st[el.id]); });
+  }catch(e){ /* ignore */ }
+  try{ sceneCustomImage = localStorage.getItem(SCENE_IMG_KEY) || ''; }catch(e){ sceneCustomImage = ''; }
+}
+['input','change'].forEach(evt=> document.addEventListener(evt, e=>{
+  const el = e.target;
+  if(el && el.id && el.id.startsWith('d_') && ['INPUT','SELECT','TEXTAREA'].includes(el.tagName) && el.type !== 'file') saveSettingEl(el);
+}));
+
+function syncPhotoStyleUi(){
+  const v = $('d_scene').value;
+  $('sceneLifestyleNote').style.display = v === 'lifestyle' ? 'block' : 'none';
+  $('sceneCustomImageBox').style.display = v === 'custom-image' ? 'block' : 'none';
+  $('sceneCustomTextBox').style.display = v === 'custom-text' ? 'block' : 'none';
+  let src = '';
+  if(PHOTO_SCENES[v]) src = makeBackdropDataUrl(v);
+  else if(v === 'custom-image') src = sceneCustomImage;
+  if(src){ $('sceneBackdropImg').src = src; $('sceneBackdropPreview').style.display = 'flex'; }
+  else $('sceneBackdropPreview').style.display = 'none';
+  $('angleCustomBox').style.display = $('d_angles').value === 'custom' ? 'block' : 'none';
+  $('sceneImageStatus').textContent = sceneCustomImage ? '✓ Görsel yüklü' : 'Henüz görsel yüklenmedi';
+  syncPhotoPromptFieldsVisibility();
+}
+['d_scene','d_angles'].forEach(id=> $(id).addEventListener('change', syncPhotoStyleUi));
+$('sceneImageBtn').addEventListener('click', ()=> $('sceneImageFile').click());
+$('sceneImageFile').addEventListener('change', async e=>{
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!f) return;
+  try{
+    sceneCustomImage = await resizeImageToDataUrl(f, 1024);
+    try{ localStorage.setItem(SCENE_IMG_KEY, sceneCustomImage); }catch(err){ alert('Görsel yüklendi ama tarayıcı kaydetmeye izin vermedi; sayfayı kapatırsan tekrar yüklemen gerekir.'); }
+    syncPhotoStyleUi();
+  }catch(err){ alert('Görsel yüklenemedi: ' + err.message); }
+});
+
+function exportProfile(){
+  const settings = {};
+  settingEls().forEach(el=>{ settings[el.id] = readSetting(el); });
+  const data = { app:'etsy-vela-tool', version:1, exportedAt:new Date().toISOString(), settings, sceneImage: sceneCustomImage || null };
+  downloadBlob(new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}), 'vela-profil.json');
+}
+async function importProfile(file){
+  try{
+    const data = JSON.parse(await file.text());
+    if(!data || data.app !== 'etsy-vela-tool' || !data.settings) throw new Error('Bu dosya bir profil dosyası değil.');
+    settingEls().forEach(el=>{ if(el.id in data.settings){ writeSetting(el, data.settings[el.id]); saveSettingEl(el); } });
+    sceneCustomImage = data.sceneImage || '';
+    try{ if(sceneCustomImage) localStorage.setItem(SCENE_IMG_KEY, sceneCustomImage); else localStorage.removeItem(SCENE_IMG_KEY); }catch(err){ /* ignore */ }
+    syncPhotoStyleUi();
+    renderProducts();
+    alert('Profil yüklendi.');
+  }catch(err){
+    alert('Profil yüklenemedi: ' + err.message);
+  }
+}
+$('profileExportBtn').addEventListener('click', exportProfile);
+$('profileImportBtn').addEventListener('click', ()=> $('profileFile').click());
+$('profileFile').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(f) importProfile(f);
+});
+
 /* ---------- Init ---------- */
+restoreSettings();
+syncPhotoStyleUi();
 $('catmapUploadBtn').addEventListener('click', ()=> $('catmapFile').click());
 $('catmapFile').addEventListener('change', e=>{
   const f = e.target.files && e.target.files[0];
