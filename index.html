@@ -173,6 +173,10 @@ td{color:var(--text-2);}
 .card .body{padding:16px 18px;}
 .card .titlerow{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
 .card .titlerow input{flex:1;font-size:14.5px;font-weight:600;padding:8px 10px;}
+.catbadge{margin-top:5px;font-size:11px;font-weight:600;line-height:1.35;padding:4px 8px;border-radius:6px;display:inline-block;}
+.catbadge.ok{color:var(--success);background:var(--success-soft);}
+.catbadge.warn{color:var(--warning);background:var(--warning-soft);}
+.catbadge.bad{color:var(--danger);background:var(--danger-soft);}
 .sectionchip{
   font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);
   background:var(--accent-soft);padding:4px 10px;border-radius:6px;white-space:nowrap;margin-top:6px;
@@ -331,7 +335,7 @@ td{color:var(--text-2);}
       <h2>Gemini API anahtarı</h2>
       <p class="desc">Bu araç tamamen Google Gemini üzerinden çalışıyor — hem metin üretimi hem foto düzenleme aynı anahtarı kullanıyor. Anahtar bu tarayıcıda (localStorage) saklanır, sayfayı kapatıp açsan bile kalır — hiçbir sunucuya gönderilmez.</p>
       <div class="apikeybox" style="margin-bottom:14px;">
-        <div class="field"><label>Google Gemini API Key</label><input type="password" id="geminiKey" placeholder="AIza..."></div>
+        <div class="field"><label>Google Gemini API Key</label><input type="text" id="geminiKey" placeholder="AIza..." autocomplete="off" autocapitalize="off" spellcheck="false" style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;"></div>
         <span class="keystatus missing" id="keyStatus">● Bağlı değil</span>
       </div>
       <p class="hint" style="font-size:11.5px;color:var(--text-3);margin:-6px 0 0;">Tek anahtar her şeyi hallediyor — hem title/description/kategori/tag üretimi (Gemini metin modeli) hem foto düzenleme (Gemini görsel modeli / "nano banana") bu anahtarı kullanır. <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">Google AI Studio</a>'dan alabilirsin — faturalandırma bağlı bir proje seçmen görsel düzenlemede daha sorunsuz çalışır.</p>
@@ -342,7 +346,7 @@ td{color:var(--text-2);}
 
     <div class="panel">
       <h2>Fotoğraf host'u</h2>
-      <p class="desc">Gemini'nin düzenlediği fotoğraflar veri olarak dönüyor; Vela gerçek bir link istiyor. Bu artık <b>kendi sitende</b> (Netlify Blobs üzerinde) otomatik depolanıp senin domain'inden (<span class="mono">.../.netlify/functions/serve-image?id=...</span>) bir link olarak dönüyor — üçüncü bir servise (ImgBB, catbox vb.) hiç bağımlı değil, tarayıcı/ağ engelleri de devreye girmiyor. Hiçbir ayar yapmana gerek yok.</p>
+      <p class="desc">Gemini'nin düzenlediği fotoğraflar veri olarak dönüyor; Vela gerçek ve <b>.jpg / .png ile biten</b> bir link istiyor. Bu artık <b>kendi sitende</b> (Netlify Blobs üzerinde) otomatik depolanıp senin domain'inden (<span class="mono">.../img/xxxxxxxx.png</span>) bir link olarak dönüyor — üçüncü bir servise (ImgBB, catbox vb.) hiç bağımlı değil, tarayıcı/ağ engelleri de devreye girmiyor. Hiçbir ayar yapmana gerek yok.</p>
       <button class="btn btn-ghost btn-sm" id="testUploadBtn">🔎 Yükleme fonksiyonunu test et</button>
       <span id="testUploadResult" class="mono" style="margin-left:10px;font-size:12px;"></span>
     </div>
@@ -387,8 +391,29 @@ td{color:var(--text-2);}
           <textarea id="d_descprompt" style="min-height:64px;">En az 120 kelime, ürünün olası kullanım alanlarını, materyalini ve hediye fikrini içeren özgün ve SEO dostu bir açıklama yaz.</textarea></div>
         <div class="field"><label>Tag talimatı</label>
           <textarea id="d_tagprompt" style="min-height:64px;">Etsy arama davranışına uygun long-tail anahtar kelimeler kullan; ürünün stilini, olası kullanım alanlarını ve hediye fikirlerini yansıtsın. Ürün adını birebir tekrar eden tekil kelimelerden kaçın.</textarea></div>
+        <div class="field"><label>Section talimatı</label>
+          <textarea id="d_sectionprompt" style="min-height:64px;">Mağaza bölümü (section) adını İngilizce, 1-3 kelimelik ve Etsy mağaza vitrininde bölüm başlığı olarak kullanılabilecek şekilde yaz. Türkçe kelime kullanma. Benzer ürünlerde HER ZAMAN aynı bölüm adını kullan.</textarea></div>
       </div>
       <p class="hint" style="font-size:11px;color:var(--text-3);margin-top:8px;">Format kuralları (en fazla 13 tag, her biri en fazla 20 karakter) her durumda uygulanır — buraya yazdığın talimat sadece tag'lerin <i>içeriğini/tonunu</i> yönlendirir.</p>
+      <p class="hint" style="font-size:11px;color:var(--text-3);margin-top:6px;"><b>Section ipucu:</b> sabit bir liste istersen şöyle yaz: <i>"Sadece şu bölümlerden birini seç: Garden Decor, Garden Statues, Novelty Gifts. Hiçbirine uymuyorsa Other yaz."</i> Liste vermezsen AI bölüm adını kendi üretir, ama aynı işte daha önce kullandığı adları yeniden kullanmaya çalışır.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Etsy kategori eşleme tablosu</h2>
+      <p class="desc">Vela'da denenmiş eBay → Etsy kategori tablosu. AI kategoriyi <b>sadece bu tablodaki Etsy yollarından</b> seçer, yol uydurmaz. Ürün verisinde bir eBay kategorisi varsa (örn. <span class="mono">Crafts|Beads &amp; Jewelry Making|Beads</span>) tablodaki karşılığı kullanılır.</p>
+      <div class="field" style="max-width:520px;margin-bottom:12px;">
+        <label>Kategori nasıl seçilsin?</label>
+        <select id="d_catmode">
+          <option value="table-first">Verideki eBay kategorisi tabloda varsa onu kullan, yoksa AI tablodan seçsin (önerilen)</option>
+          <option value="ai-only">Her zaman AI seçsin (eBay eşleşmesi sadece ipucu olsun)</option>
+        </select>
+      </div>
+      <div id="catmapStatus" class="mono" style="font-size:12px;margin-bottom:10px;"></div>
+      <input type="file" id="catmapFile" accept=".xlsx,.xls,.csv" style="display:none;">
+      <button class="btn btn-ghost btn-sm" id="catmapUploadBtn">📂 Kendi tablonu yükle</button>
+      <button class="btn btn-ghost btn-sm" id="catmapResetBtn" style="display:none;">↺ Varsayılan tabloya dön</button>
+      <p class="hint" style="font-size:11px;color:var(--text-3);margin-top:8px;">Tablo biçimi: 1. kolon eBay kategori yolu, 2. kolon Etsy ID, 3. kolon Etsy yolu (<span class="mono">A &gt; B &gt; C</span>); ilk satır başlık. Yeni kategori eklemek istersen tabloyu güncelleyip buradan yükle, kod değişikliği gerekmez.</p>
+      <datalist id="catlist"></datalist>
     </div>
 
     <div class="panel">
@@ -470,8 +495,15 @@ td{color:var(--text-2);}
       <h2>Vela formatında indir</h2>
       <p class="desc" id="exportDesc">Henüz çıkarılmış ürün yok.</p>
       <p class="desc" id="exportPhotoSummary" style="margin-top:-8px;"></p>
-      <button class="btn btn-primary" id="exportBtn">⬇ .xlsx olarak indir</button>
+      <p class="desc" id="exportCatSummary" style="margin-top:-8px;"></p>
+      <button class="btn btn-primary" id="exportCsvBtn">⬇ Vela için CSV indir</button>
+      <button class="btn btn-ghost" id="exportBtn">.xlsx olarak da indir</button>
+      <button class="btn btn-ghost" id="exportZipBtn">📦 ZIP olarak indir (fotoğraflar + xlsx)</button>
       <button class="btn btn-ghost" id="exportGoPhotosBtn" style="display:none;">🎨 Önce fotoğrafları düzenle</button>
+      <label style="display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:12px;color:var(--text-2);max-width:620px;cursor:pointer;">
+        <input type="checkbox" id="csvBom" checked style="margin-top:2px;">
+        <span>CSV'yi Excel'de açınca Türkçe/özel karakterler bozulmasın (UTF-8 BOM ekle). Vela'nın kolon eşleme ekranında ilk kolon adı garip görünürse bu kutuyu kapatıp tekrar indir.</span>
+      </label>
       <div class="notice info" style="margin-top:14px;">
         Düzenlenen fotoğraflar artık otomatik olarak (kendi sitenin sunucusunda, Netlify Blobs üzerinden) yüklenip linki buraya düşer, elle bir şey yapman gerekmez. Boş kalan slotlar (hiç düzenlenmemişse) orijinal Etsy görselinin linkini kullanır.
       </div>
@@ -495,6 +527,7 @@ td{color:var(--text-2);}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 const VELA_HEADERS = ["Title","Description","Category","Who made it?","What is it?","When was it made?","Renewal options","Product type","Tags","Materials","Production partners","Section","Price","Quantity","SKU","Variation 1","V1 Option","Variation 2","V2 Option","Var Price","Var Quantity","Var SKU","Var Visibility","Var Photo","Shipping profile","Weight","Length","Width","Height","Return policy","Photo 1","Photo 2","Photo 3","Photo 4","Photo 5","Photo 6","Photo 7","Photo 8","Photo 9","Photo 10","Video 1","Digital file 1","Digital file 2","Digital file 3","Digital file 4","Digital file 5"];
 
@@ -655,20 +688,26 @@ const API_KEYS_STORAGE = 'etsy_vela_api_keys_v1';
 function wireKeyStatus(inputId, statusId){
   const el = $(inputId);
   const ks = $(statusId);
+  let persisted = true; // localStorage'a yazılabildi mi
   function refreshStatus(){
-    if(el.value.trim().length > 10){
-      ks.textContent = '● Anahtar girildi'; ks.className='keystatus ok';
+    const v = el.value.trim();
+    if(v.length > 10){
+      ks.textContent = persisted
+        ? '● Kaydedildi — …' + v.slice(-4)
+        : '● Girildi (bu tarayıcı kaydetmeye izin vermiyor) — …' + v.slice(-4);
+      ks.className='keystatus ok';
     }else{
       ks.textContent = '● Bağlı değil'; ks.className='keystatus missing';
     }
   }
   el.addEventListener('input', ()=>{
-    refreshStatus();
     try{
       const saved = JSON.parse(localStorage.getItem(API_KEYS_STORAGE) || '{}');
       saved[inputId] = el.value;
       localStorage.setItem(API_KEYS_STORAGE, JSON.stringify(saved));
-    }catch(e){ /* storage unavailable — key just won't survive a reload */ }
+      persisted = true;
+    }catch(e){ persisted = false; /* storage unavailable — key just won't survive a reload */ }
+    refreshStatus();
   });
   // restore on load
   try{
@@ -737,11 +776,12 @@ function buildProductPlaceholders(filename){
       rawRow: row,
       status: 'pending', // pending | processing | done | error
       errorMsg: '',
-      title: guessRawTitle(row), description: '', category: '', section: '',
+      title: guessRawTitle(row), description: '', category: '', categoryId: null, categorySource: '', categoryConf: '', section: '',
       tags: [], materials: '',
       sourceImageUrl: rawImg ? upscaleEtsyImage(rawImg) : null,
       sourceEtsyLink: findEtsyLink(row),
       titlePrompt: titlePrompt, descPrompt: descPrompt, tagPrompt: tagPrompt,
+      sectionPrompt: '', // boş = Ayarlar'daki genel Section talimatını kullan; kartta düzenlenirse sadece bu ürüne özel olur
       photoPrompts: Array.from({length:3}, ()=> ''),
       editedImages: Array.from({length:3}, ()=> null),
       finalUrls: Array.from({length:3}, ()=> ''),
@@ -792,6 +832,202 @@ function guessRawTitle(rowObj){
   return vals.reduce((a,b)=> b.length > a.length ? b : a, '');
 }
 
+/* ---------- Etsy kategori eşleme (eBay → Etsy) ----------
+   Vela'da denenmiş tablo: [eBay kategori yolu, Etsy ID, Etsy yolu].
+   Kategori ASLA serbest üretilmez: ya tablodaki eBay eşleşmesinden gelir, ya AI tablodaki ID'lerden birini seçer. */
+const CATMAP_STORAGE = 'etsy_vela_catmap_v1';
+const DEFAULT_CATEGORY_MAP = [["Crafts|Beads & Jewelry Making|Jewelry Findings|Bead Caps",6287,"Craft Supplies & Tools > Findings > Bead Caps"],["Crafts|Beads & Jewelry Making|Jewelry Findings|Jewelry Making Chains",6294,"Craft Supplies & Tools > Findings > Chains"],["Crafts|Beads & Jewelry Making|Charms & Pendants",6427,"Craft Supplies & Tools > Beads, Gems & Cabochons > Charms & Pendants > Pendants"],["Jewelry & Watches|Jewelry Care, Design & Repair|Jewelry Settings",6426,"Craft Supplies & Tools > Beads, Gems & Cabochons > Charms & Pendants > Charms"],["Crafts|Beads & Jewelry Making|Beads",6238,"Craft Supplies & Tools > Beads, Gems & Cabochons > Beads"],["eBay Motors|Parts & Accessories|Car & Truck Parts & Accessories|Exterior Parts & Accessories|Decals & Vinyls",6064,"Electronics & Accessories > Car Parts & Accessories > Car Accessories > Decorative License Plates"],["eBay Motors|Parts & Accessories|Car & Truck Parts & Accessories|Exterior Parts & Accessories|License Plates & Frames",12423,"Electronics & Accessories > Car Parts & Accessories > Car Accessories > License Plate Covers & Frames"],["Crafts|Multi-Purpose Craft Supplies|Crafting Pieces|Pom Poms",6438,"Craft Supplies & Tools > Decorations & Embellishments > Pom Poms"],["Crafts|Multi-Purpose Craft Supplies|Organization & Storage|Other Craft Storage",6375,"Craft Supplies & Tools > Storage & Organization > Containers > Cases"],["Business & Industrial|Healthcare, Lab & Dental|Medical, Lab & Dental Supplies|Disposable Face Masks",12112,"Accessories > Face Masks & Accessories > Face Masks & Coverings"],["Home & Garden|Lamps, Lighting & Ceiling Fans|Chandeliers & Ceiling Fixtures",1662,"Weddings > Decorations > Centerpieces"],["Home & Garden|Wedding Supplies|Tulle",6451,"Craft Supplies & Tools > Fabric & Notions > Fabric"],["Sporting Goods|Outdoor Sports|Skateboarding & Longboarding|Stickers & Decals",1675,"Weddings > Invitations & Paper > Invitation Kits"],["Crafts|Home Arts & Crafts|Floral Crafts|Floral Forms, Bases & Frames",6618,"Craft Supplies & Tools > Floral Arranging Supplies > Floral Foam"],["Business & Industrial|Restaurant & Food Service|Tabletop & Serving|Tabletop|Restaurant Linens|Table Skirting",1955,"Home & Living > Kitchen & Dining > Linens > Table Linens > Table Linen Sets"],["Home & Garden|Home Décor|Decals, Stickers & Vinyl Art",1988,"Home & Living > Home Decor > Wall Decor > Wall Decals & Murals > Shapes"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Storage & Organization|Canisters & Jars",6083,"Home & Living > Kitchen & Dining > Kitchen Storage > Jars & Containers > Canister Sets"],["Home & Garden|Greeting Cards & Party Supply|Party Supplies|Favors & Party Bag Fillers",1349,"Paper & Party Supplies > Party Supplies > Party Favors & Games > Party Favors"],["Home & Garden|Wedding Supplies|Balloons",1333,"Paper & Party Supplies > Party Supplies > Party Decor > Balloons"],["Crafts|Multi-Purpose Craft Supplies|Crafting Pieces|Styrofoam Forms",6437,"Craft Supplies & Tools > Decorations & Embellishments > Mirrors"],["Home & Garden|Wedding Supplies|Tableware & Serveware",1345,"Paper & Party Supplies > Party Supplies > Party Decor > Tableware > Straws"],["Home & Garden|Window Treatments & Hardware|Curtains & Drapes",2182,"Home & Living > Curtains & Window Treatments > Curtains"],["Home & Garden|Home Décor|Vases",1026,"Home & Living > Home Decor > Home Accents > Vases"],["Home & Garden|Home Décor|Mirrors",260,"Bath & Beauty > Makeup & Cosmetics > Makeup Tools & Brushes > Hand & Pocket Mirrors"],["Home & Garden|Wedding Supplies|Candles & Candle Holders",2214,"Home & Living > Home Decor > Candles & Home Fragrances > Candleholders > Candlestick Holders"],["Home & Garden|Wedding Supplies|Flowers, Petals & Garlands",6862,"Craft Supplies & Tools > Floral Arranging Supplies > Flowers > Artificial Flowers"],["Home & Garden|Wedding Supplies|Centerpieces & Table Décor",6336,"Home & Living > Lighting > Light Fixtures > Garden & String Lights > String Lights"],["Home & Garden|Kitchen, Dining & Bar|Linens & Textiles|Table Runners",1945,"Home & Living > Kitchen & Dining > Linens > Table Linens > Table Runners"],["Home & Garden|Window Treatments & Hardware|Curtain Rods & Hardware",12638,"Home & Living > Curtains & Window Treatments > Curtain Hardware > Curtain Rods"],["Crafts|Multi-Purpose Craft Supplies|Crafting Pieces|Ribbon",6452,"Craft Supplies & Tools > Fabric & Notions > Ribbon"],["Home & Garden|Wedding Supplies|Venue Decorations",1332,"Paper & Party Supplies > Party Supplies > Party Decor > Backdrops & Props"],["Home & Garden|Wedding Supplies|Wedding Favors",1671,"Weddings > Gifts & Mementos > Wedding Favors"],["Home & Garden|Wedding Supplies|Wedding Cake Stands & Plates",1046,"Home & Living > Kitchen & Dining > Dining & Serving > Cake Stands"],["Home & Garden|Kitchen, Dining & Bar|Linens & Textiles|Placemats",1952,"Home & Living > Kitchen & Dining > Linens > Table Linens > Placemats"],["Crafts|Fabric",6451,"Craft Supplies & Tools > Fabric & Notions > Fabric"],["Home & Garden|Kitchen, Dining & Bar|Linens & Textiles|Napkins",1953,"Home & Living > Kitchen & Dining > Linens > Table Linens > Napkins"],["Home & Garden|Kitchen, Dining & Bar|Linens & Textiles|Tablecloths",1954,"Home & Living > Kitchen & Dining > Linens > Table Linens > Tablecloths"],["Health & Beauty|Vision Care|Eyeglass Cases & Storage",60,"Accessories > Sunglasses & Eyewear > Glasses Cases"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Sunglasses & Sunglasses Accessories|Sunglasses",60,"Accessories > Sunglasses & Eyewear > Glasses Cases"],["Health & Beauty|Vision Care|Eyeglass Frames",59,"Accessories > Sunglasses & Eyewear > Eyeglasses > Glasses Frames"],["Clothing, Shoes & Accessories|Men|Men's Clothing|Activewear|Hoodies & Sweatshirts",2202,"Clothing > Gender-Neutral Adult Clothing > Hoodies & Sweatshirts > Sweatshirts"],["Collectibles|Decorative Collectibles|Boxes, Jars & Tins",6104,"Jewelry > Jewelry Storage > Ring Dishes"],["Health & Beauty|Makeup|Makeup Bags & Cases",143,"Bags & Purses > Cosmetic & Toiletry Storage > Cosmetic Bags"],["Clothing, Shoes & Accessories|Men|Men's Clothing|Underwear",1829,"Clothing > Men's Clothing > Underwear > Boxers & Briefs > Boxer Briefs"],["Entertainment Memorabilia|Movie Memorabilia|Merchandise & Promotional|Badges, Pins & Buttons",41,"Accessories > Pins & Clips > Pins & Pinback Buttons"],["Jewelry & Watches|Handcrafted & Artisan Jewelry|Anklets",1180,"Jewelry > Body Jewelry > Anklets"],["Business & Industrial|Office|Office Supplies|Calendars & Planners|Blank Diaries & Journals",6837,"Craft Supplies & Tools > Canvas & Surfaces > Journals & Albums > Journals"],["Clothing, Shoes & Accessories|Women|Women's Clothing|Skirts",2912,"Home & Living > Home Decor > Seasonal Decor > Tree Skirts"],["Home & Garden|Home Décor|Decorative Accessories|Decorative Plates & Bowls",1003,"Home & Living > Home Decor > Decorative Storage > Decorative Bowls"],["Collectibles|Transportation|Motorcycles|Motorcycle Memorabilia|Patches",40,"Accessories > Patches & Appliques"],["Clothing, Shoes & Accessories|Women|Women's Clothing|Sweaters",549,"Clothing > Women's Clothing > Sweaters > Cardigans"],["Home & Garden|Bath|Bathroom Accessories|Towels & Washcloths",904,"Home & Living > Bathroom > Bath Towels"],["Collectibles|Vanity, Perfume & Shaving|Hand Mirrors",260,"Bath & Beauty > Makeup & Cosmetics > Makeup Tools & Brushes > Hand & Pocket Mirrors"],["Business & Industrial|Facility Maintenance & Safety|Personal Protective Equipment (PPE)|Masks & Respirators|Other Masks & Respirators",12112,"Accessories > Face Masks & Accessories > Face Masks & Coverings"],["Home & Garden|Home Décor|Tapestries",12109,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Tapestries"],["Home & Garden|Kids & Teens at Home|Bedding|Blankets & Throws",915,"Home & Living > Bedding > Blankets & Throws > Throws"],["Collectibles|Religion & Spirituality|Wicca & Paganism|Tarot Cards & Bags",1965,"Home & Living > Spirituality & Religion > Divination Tools > Tarot"],["Home & Garden|Kitchen, Dining & Bar|Glassware & Drinkware",1071,"Home & Living > Kitchen & Dining > Drink & Barware > Drinkware > Tumblers & Water Glasses"],["Collectibles|Collectible Figures & Supplies|Collectible Figures & Bobbleheads",1585,"Toys & Games > Toys > Dolls & Action Figures > Action Figures"],["Home & Garden|Household Supplies & Cleaning|General Household Supplies|Air Fresheners",920,"Home & Living > Cleaning Supplies > Air Fresheners"],["Clothing, Shoes & Accessories|Kids|Backpacks & Bags",136,"Bags & Purses > Backpacks"],["Home & Garden|Bedding|Pillowcases",1925,"Home & Living > Bedding > Sheets & Pillowcases > Pillowcases"],["Home & Garden|Bath|Bathroom Accessories|Bath Mats, Rugs & Toilet Covers",1916,"Home & Living > Bathroom > Bath Mats & Rugs > Bath Rugs"],["Home & Garden|Holiday & Seasonal Décor|String Lights",6336,"Home & Living > Lighting > Light Fixtures > Garden & String Lights > String Lights"],["Home & Garden|Rugs & Carpets|Area Rugs",929,"Home & Living > Floor & Rugs > Rugs"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Gloves",1764,"Accessories > Gloves & Sleeves > Mittens"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Prosthetics",2168,"Accessories > Costume Accessories > Prosthetics"],["Toys & Hobbies|Stuffed Animals|Other Stuffed Animals",2402,"Toys & Games > Toys > Stuffed Animals & Plushies > Monsters"],["Health & Beauty|Medical & Mobility|Orthopedics & Supports|Orthotics, Braces & Sleeves",11163,"Clothing > Gender-Neutral Adult Clothing > Socks & Hosiery > Athletic Socks"],["Clothing, Shoes & Accessories|Specialty|Vintage|Vintage Accessories|Men's Hats",25,"Accessories > Hats & Head Coverings > Hats & Caps"],["Sporting Goods|Camping & Hiking|Hiking Backpacks|Hydration Packs",136,"Bags & Purses > Backpacks"],["Sporting Goods|Camping & Hiking|Hiking Backpacks|Backpacks",136,"Bags & Purses > Backpacks"],["Crafts|Sewing|Other Sewing",6346,"Craft Supplies & Tools > Patterns & How To > Kits"],["Sporting Goods|Camping & Hiking|Flashlights, Lanterns & Lights|Flashlights",6333,"Craft Supplies & Tools > Imaging & Lighting > Lighting > Flashlights"],["Sporting Goods|Camping & Hiking|Flashlights, Lanterns & Lights|Headlamps",6333,"Craft Supplies & Tools > Imaging & Lighting > Lighting > Flashlights"],["Business & Industrial|Facility Maintenance & Safety|Public Safety Staff Equipment|Police & Turnout Gear|Police & Security Holsters",6072,"Toys & Games > Sports & Outdoor Recreation > Hunting & Archery > Hunting > Holsters"],["Travel|Travel Accessories|Other Travel Accessories",148,"Bags & Purses > Cosmetic & Toiletry Storage > Toiletry Kits & Travel Cases"],["Collectibles|Militaria|Current Militaria (2001-Now)|Original Items|Patches|Marines",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Sporting Goods|Camping & Hiking|Camping Knives & Tools|Camping Saws",6319,"Craft Supplies & Tools > Knives & Cutting Tools > Saws"],["Clothing, Shoes & Accessories|Kids|Boys|Boys' Accessories|Hats",468,"Clothing > Gender-Neutral Adult Clothing > Costumes"],["Collectibles|Sewing (1930-Now)|Sewing Kits",6346,"Craft Supplies & Tools > Patterns & How To > Kits"],["Travel|Luggage",12069,"Bags & Purses > Luggage & Travel > Luggage Covers"],["Sporting Goods|Outdoor Sports|Airsoft|Accessories",2153,"Accessories > Hats & Head Coverings > Helmets"],["Sporting Goods|Hunting|Holsters, Belts & Pouches|Holsters",6072,"Toys & Games > Sports & Outdoor Recreation > Hunting & Archery > Hunting > Holsters"],["Sporting Goods|Camping & Hiking|Camping Cooking Supplies|Camping Cookware",1948,"Home & Living > Kitchen & Dining > Cookware > Pots & Pans > Pot & Pan Sets"],["Sporting Goods|Camping & Hiking|Hiking Backpacks|Daypacks",136,"Bags & Purses > Backpacks"],["Sporting Goods|Hunting|Other Hunting",6100,"Bath & Beauty > Makeup & Cosmetics > Face > Face & Body Paint"],["Toys & Hobbies|Action Figures & Accessories|Action Figures",1585,"Toys & Games > Toys > Dolls & Action Figures > Action Figures"],["Sporting Goods|Hunting|Blinds & Tree Stands|Camouflage Materials",6100,"Bath & Beauty > Makeup & Cosmetics > Face > Face & Body Paint"],["Collectibles|Militaria|Current Militaria (2001-Now)|Original Items|Personal, Field Gear|Dog Tags",1386,"Pet Supplies > Pet Collars & Leashes > Pet ID Tags"],["Collectibles|Historical Memorabilia|Police|Whistles",2042,"Books, Movies & Music > Music > Musical Instruments > Woodwinds > Whistles"],["Toys & Hobbies|Games|Card Games & Poker|Playing Cards",2386,"Toys & Games > Games & Puzzles > Card Games > Standard Card Decks"],["Collectibles|Militaria|Current Militaria (2001-Now)|Original Items|Personal, Field Gear|Opticals",6787,"Accessories > Sunglasses & Eyewear > Eyeglasses > Goggles & Safety Glasses"],["Sporting Goods|Winter Sports|Clothing|Goggles & Sunglasses",6787,"Accessories > Sunglasses & Eyewear > Eyeglasses > Goggles & Safety Glasses"],["Business & Industrial|Facility Maintenance & Safety|Public Safety Staff Equipment|Police & Turnout Gear|Police & Security Bags & Packs",170,"Bags & Purses > Luggage & Travel > Duffel Bags"],["Collectibles|Tobacciana|Match Holders",1867,"Art & Collectibles > Collectibles > Tobacciana > Lighters"],["Sporting Goods|Outdoor Sports|Climbing & Caving|Carabiners & Hardware",12623,"Toys & Games > Sports & Outdoor Recreation > Fitness & Exercise > Rock Climbing"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Sharpeners",6411,"Craft Supplies & Tools > Pens, Pencils & Marking Tools > Pencil Sharpeners"],["Sporting Goods|Hunting|Holsters, Belts & Pouches|Ammunition Belts & Bandoliers",6072,"Toys & Games > Sports & Outdoor Recreation > Hunting & Archery > Hunting > Holsters"],["Sporting Goods|Camping & Hiking|Camping Furniture",978,"Home & Living > Furniture > Dining Room Furniture > Stools & Banquettes"],["Sporting Goods|Hunting|Knives & Tools|Fixed Blade",6314,"Craft Supplies & Tools > Knives & Cutting Tools > Blades"],["Clothing, Shoes & Accessories|Men|Men's Clothing|Socks",2134,"Clothing > Gender-Neutral Kids' Clothing > Gender-Neutral Baby Clothing > Socks & Leg Warmers > Socks"],["Sporting Goods|Tactical & Duty Gear|Tactical Patches",40,"Accessories > Patches & Appliques"],["Home & Garden|Tools & Workshop Equipment|Tool Boxes & Storage|Tool Bags, Belts & Pouches",6903,"Craft Supplies & Tools > Storage & Organization > Containers > Boxes, Baskets & Bins > Boxes > Tool Boxes"],["Sporting Goods|Camping & Hiking|Camping Knives & Tools|Other Camping Knives & Tools",12619,"Toys & Games > Sports & Outdoor Recreation > Camping > Pocket Knives"],["Sporting Goods|Tactical & Duty Gear|Tactical Clothing",6787,"Accessories > Sunglasses & Eyewear > Eyeglasses > Goggles & Safety Glasses"],["Sporting Goods|Winter Sports|Clothing|Hats & Headwear",12648,"Accessories > Hats & Head Coverings > Hoods"],["Collectibles|Militaria|Surplus|Medals, Pins & Ribbons",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Clothing, Shoes & Accessories|Specialty|Clothing & Shoe Care|Shoe Care & Repair|Shoe Cleaners, Conditioners & Polishes",1453,"Shoes > Insoles & Accessories > Shoe Care & Cleaning"],["Clothing, Shoes & Accessories|Men|Men's Clothing|Coats, Jackets & Vests",2834,"Clothing > Men's Clothing > Ponchos"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Sunglasses & Sunglasses Accessories|Sunglasses",60,"Accessories > Sunglasses & Eyewear > Glasses Cases"],["Sporting Goods|Tactical & Duty Gear|Chest Rigs & Tactical Vests",5,"Accessories > Belts & Suspenders > Suspenders"],["Sporting Goods|Camping & Hiking|Camping Knives & Tools|Camping Knives",6908,"Craft Supplies & Tools > Tools & Equipment > Tools > Chisels, Picks & Awls > Picks"],["Sporting Goods|Camping & Hiking|Camping Knives & Tools|Camping Hatchets & Axes",6321,"Craft Supplies & Tools > Knives & Cutting Tools > Axes"],["Sporting Goods|Camping & Hiking|Water Bottles & Hydration|Canteens, Bottles & Flasks",1070,"Home & Living > Kitchen & Dining > Drink & Barware > Drinkware > Water Bottles"],["Sporting Goods|Camping & Hiking|Camping Knives & Tools|Camping Shovels",6908,"Craft Supplies & Tools > Tools & Equipment > Tools > Chisels, Picks & Awls > Picks"],["Sporting Goods|Hunting|Clothing, Shoes & Accessories|Other Hunting Clothing & Accs",6100,"Bath & Beauty > Makeup & Cosmetics > Face > Face & Body Paint"],["Sporting Goods|Tactical & Duty Gear|Tactical Bags & Packs",182,"Bags & Purses > Pouches & Coin Purses"],["Sporting Goods|Tactical & Duty Gear|Hats & Headwear",12648,"Accessories > Hats & Head Coverings > Hoods"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Scarves",46,"Accessories > Scarves & Wraps > Scarves"],["Home & Garden|Furniture|Bar Stools & Stools",1984,"Home & Living > Outdoor & Gardening > Patio Furniture > Patio Chairs"],["Collectibles|Militaria|Current Militaria (2001-Now)|Original Items|Personal, Field Gear|Belts & Belt Buckles",3,"Accessories > Belts & Suspenders > Belt Buckles"],["Collectibles|Militaria|Surplus|Personal, Field Gear|Bags & Packs",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Sporting Goods|Hunting|Clothing, Shoes & Accessories|Hats & Headwear",12648,"Accessories > Hats & Head Coverings > Hoods"],["Collectibles|Militaria|Current Militaria (2001-Now)|Original Items|Personal, Field Gear|Bags & Packs",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Knives, Swords & Blades|Collectible Fixed Blade Knives|Modern Fixed Blade|Factory Manufactured",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Religion & Spirituality|Wicca & Paganism|Other Wicca & Paganism",1970,"Home & Living > Spirituality & Religion > Divination Tools > Talking Boards"],["Home & Garden|Yard, Garden & Outdoor Living|Décor|Other Outdoor Décor",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Face Paint & Stage Makeup",2168,"Accessories > Costume Accessories > Prosthetics"],["Antiques|Architectural & Garden|Hardware|Door Knobs & Handles",783,"Home & Living > Home Improvement > Drawer Knobs & Pulls"],["Antiques|Primitives",1101,"Home & Living > Office > Office & Desk Storage"],["Collectibles|Transportation|Automobilia|Signs & Plaques",12110,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Marquee Letters & Signs"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Storage & Organization|Food Storage Containers",6083,"Home & Living > Kitchen & Dining > Kitchen Storage > Jars & Containers > Canister Sets"],["Antiques|Architectural & Garden|Hardware|Drawer Pulls",783,"Home & Living > Home Improvement > Drawer Knobs & Pulls"],["Home & Garden|Yard, Garden & Outdoor Living|Garden Hand Tools & Equipment|Trowels",1112,"Home & Living > Outdoor & Gardening > Gardening Tools"],["Home & Garden|Home Décor|Floral Décor",12492,"Home & Living > Home Decor > Faux Plants & Greenery"],["Collectibles|Religion & Spirituality|Buddhism|Prayer Flags",12234,"Home & Living > Spirituality & Religion > Religious Home & Decor > Prayer Flags"],["Home & Garden|Pillows",1017,"Home & Living > Home Decor > Throw Pillows"],["Sporting Goods|Hunting|Taxidermy|Large Animals",6086,"Home & Living > Home Decor > Home Accents > Taxidermy & Curiosities > Animal Mounts"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Cutting Boards",1038,"Home & Living > Kitchen & Dining > Cookware > Cutting Boards"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Storage & Organization|Cling Film, Foil & Food Wraps",12463,"Home & Living > Kitchen & Dining > Kitchen Storage > Reusable Bowl Covers"],["Home & Garden|Kitchen, Dining & Bar|Baking Accs. & Cake Decorating|Rolling Pins",6499,"Home & Living > Kitchen & Dining > Cookware > Cooking Utensils & Gadgets > Rolling Pins"],["Jewelry & Watches|Loose Beads",6238,"Craft Supplies & Tools > Beads, Gems & Cabochons > Beads"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Umbrellas",65,"Accessories > Umbrellas & Rain Accessories"],["Home & Garden|Holiday & Seasonal Décor|Tree Stands & Skirts",2912,"Home & Living > Home Decor > Seasonal Decor > Tree Skirts"],["Home & Garden|Household Supplies & Cleaning|Laundry Supplies|Laundry Carts & Hampers",2231,"Home & Living > Storage & Organization > Laundry Bags & Hampers > Hampers"],["Antiques|Maritime|Maritime Reproductions",1229,"Jewelry > Necklaces > Pendant Necklaces"],["Home & Garden|Greeting Cards & Party Supply|Party Supplies|Other Party Supplies",1068,"Home & Living > Kitchen & Dining > Drink & Barware > Barware > Shot Glasses"],["Baby|Feeding|Bottle Feeding|Bottle Brushes",204,"Bath & Beauty > Baby & Child Care > Feeding"],["Collectibles|Tools, Hardware & Locks|Tools|Carpentry, Woodworking|Chisels",6907,"Craft Supplies & Tools > Tools & Equipment > Tools > Chisels, Picks & Awls > Chisels"],["Home & Garden|Kitchen, Dining & Bar|Bar Tools & Accessories|Other Bar Tools & Accessories",1060,"Home & Living > Kitchen & Dining > Drink & Barware > Drinkware > Coasters"],["Home & Garden|Kitchen, Dining & Bar|Linens & Textiles|Towels & Dishcloths",1083,"Home & Living > Kitchen & Dining > Linens > Dishcloths"],["Collectibles|Historical Memorabilia|Firefighting & Rescue|Helmets",2830,"Jewelry > Watches > Pocket Watches"],["Home & Garden|Kitchen, Dining & Bar|Bar Tools & Accessories|Corkscrews & Openers",1057,"Home & Living > Kitchen & Dining > Drink & Barware > Barware > Bottle Openers"],["Home & Garden|Kitchen, Dining & Bar|Flatware, Knives & Cutlery|Scissors & Shears",2325,"Home & Living > Kitchen & Dining > Cookware > Cutlery & Knives > Cutlery"],["Collectibles|Animals|Wild Animals|Bears",1604,"Art & Collectibles > Dolls & Miniatures > Miniatures > Dollhouse Miniatures > Doll Furniture"],["Clothing, Shoes & Accessories|Specialty|Vintage|Vintage Accessories|Canes & Walking Sticks",272,"Bath & Beauty > Personal Care > Canes & Walking"],["Sports Mem, Cards & Fan Shop|Autographs-Original|Display Cases",6675,"Craft Supplies & Tools > Storage & Organization > Display Cases & Cabinets"],["Crafts|Multi-Purpose Craft Supplies|Crafting Pieces|Feathers",6430,"Craft Supplies & Tools > Decorations & Embellishments > Feathers"],["Home & Garden|Home Improvement|Building & Hardware|Cabinet Hardware|Cabinet Pulls",783,"Home & Living > Home Improvement > Drawer Knobs & Pulls"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Nut & Shell Crackers",6508,"Home & Living > Kitchen & Dining > Cookware > Cooking Utensils & Gadgets > Kitchen Tongs"],["Home & Garden|Home Décor|Decorative Accessories|Doorstops",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Home & Garden|Kitchen, Dining & Bar|Flatware, Knives & Cutlery|Serving Utensils & Sets",6508,"Home & Living > Kitchen & Dining > Cookware > Cooking Utensils & Gadgets > Kitchen Tongs"],["Home & Garden|Yard, Garden & Outdoor Living|Décor|Plant Stands",1920,"Home & Living > Bathroom > Soap Dishes & Dispensers > Soap Dishes"],["Home & Garden|Yard, Garden & Outdoor Living|Outdoor Heating, Cooking & Eating|Barbecue Tools",1979,"Home & Living > Outdoor & Gardening > Grills & Accessories > Grill Tools"],["Musical Instruments & Gear|Wind & Woodwind|Band & Orchestral|Flutes",2038,"Books, Movies & Music > Music > Musical Instruments > Woodwinds > Flutes"],["Collectibles|Kitchen & Home|Kitchen Tools & Gadgets|Colanders, Strainers & Sifters",1035,"Home & Living > Kitchen & Dining > Cookware > Colanders & Strainers"],["Collectibles|Kitchen & Home|Kitchen Tools & Gadgets|Refrigerator Magnets",1075,"Home & Living > Kitchen & Dining > Kitchen Decor > Refrigerator Magnets"],["Home & Garden|Home Improvement|Home Security|Key Safes, Boxes & Hideaways",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Home & Garden|Yard, Garden & Outdoor Living|Bird & Wildlife Accessories|Bird Feeders",12611,"Home & Living > Outdoor & Gardening > Garden Decoration > Bird Baths"],["Collectibles|Cultures & Ethnicities|Western Americana|Posters",2845,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Address Signs"],["Collectibles|Holiday & Seasonal|Masks",10,"Accessories > Costume Accessories > Costume Weapons"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Funnels",6505,"Home & Living > Kitchen & Dining > Cookware > Cooking Utensils & Gadgets > Funnels"],["Home & Garden|Lamps, Lighting & Ceiling Fans|Lamps",2815,"Home & Living > Lighting > Lamps, Shades & Bases > Lamps > Table Lamps"],["Everything Else|Metaphysical|Wicca|Incense",1007,"Home & Living > Home Decor > Candles & Home Fragrances > Home Fragrances > Incense"],["Home & Garden|Yard, Garden & Outdoor Living|Garden Hand Tools & Equipment|Saws",1112,"Home & Living > Outdoor & Gardening > Gardening Tools"],["Home & Garden|Food & Beverages|Pantry|Snacks|Popcorn",1348,"Paper & Party Supplies > Party Supplies > Party Favors & Games > Favor Bags & Containers"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Storage & Organization|Lunch Containers",1859,"Home & Living > Kitchen & Dining > Kitchen Storage > Knife Blocks & Storage"],["Home & Garden|Home Décor|Sculptures & Figurines",69,"Art & Collectibles > Collectibles > Figurines & Knick Knacks"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Other Kitchen Tools & Gadgets",6503,"Home & Living > Kitchen & Dining > Cookware > Cooking Utensils & Gadgets > Graters"],["Crafts|Multi-Purpose Craft Supplies|Crafting Pieces|Clothespins",6279,"Craft Supplies & Tools > Closures & Fasteners > Clothespins"],["Home & Garden|Home Décor|Decorative Accessories|Masks",12653,"Accessories > Sunglasses & Eyewear > Eye Patches"],["Collectibles|Kitchen & Home|Dinnerware & Serveware|Egg Cups",1047,"Home & Living > Kitchen & Dining > Dining & Serving > Dinnerware Sets"],["Home & Garden|Holiday & Seasonal Décor|Figurines",69,"Art & Collectibles > Collectibles > Figurines & Knick Knacks"],["Toys & Hobbies|Preschool Toys & Pretend Play|Dress-Up, Costumes",1349,"Paper & Party Supplies > Party Supplies > Party Favors & Games > Party Favors"],["Business & Industrial|Healthcare, Lab & Dental|Handpieces & Instruments|Other Handpieces & Instruments",6932,"Craft Supplies & Tools > Tools & Equipment > Tools > Pliers, Tweezers & Tongs > Tweezers"],["Home & Garden|Greeting Cards & Party Supply|Party Supplies|Party Tableware & Serveware",1345,"Paper & Party Supplies > Party Supplies > Party Decor > Tableware > Straws"],["Home & Garden|Kitchen, Dining & Bar|Dinnerware & Serveware|Bowls",1044,"Home & Living > Kitchen & Dining > Dining & Serving > Bowls"],["Everything Else|Metaphysical|Crystal Healing|Pendant",1229,"Jewelry > Necklaces > Pendant Necklaces"],["Home & Garden|Household Supplies & Cleaning|Cleaning Products",924,"Home & Living > Cleaning Supplies > Cleaning Products"],["Collectibles|Transportation|Motorcycles|Motorcycle Memorabilia|Signs",2845,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Address Signs"],["Home & Garden|Yard, Garden & Outdoor Living|Watering Equipment|Water Storage & Rain Barrels",1173,"Home & Living > Storage & Organization > Outdoor Storage"],["Sporting Goods|Camping & Hiking|Hiking Gear|GPS & Compasses",12469,"Toys & Games > Sports & Outdoor Recreation > Camping > Compasses"],["Collectibles|Animals|Other Animal Collectibles",6087,"Home & Living > Home Decor > Home Accents > Taxidermy & Curiosities > Bones & Skulls"],["Home & Garden|Greeting Cards & Party Supply|Party Supplies|Party Gags & Tricks",1349,"Paper & Party Supplies > Party Supplies > Party Favors & Games > Party Favors"],["Sporting Goods|Hunting|Gun Storage|Racks",1170,"Home & Living > Storage & Organization > Hooks & Fixtures"],["Collectibles|Pinbacks & Lunchboxes|Pinbacks|Sports",1865,"Art & Collectibles > Artist Trading Cards"],["Crafts|Leathercrafts|Leather Hides & Fur Pelts",6353,"Craft Supplies & Tools > Raw Materials > Leather"],["Musical Instruments & Gear|Percussion|Orchestral Percussion|Bells & Chimes",2030,"Books, Movies & Music > Music > Musical Instruments > Drums & Percussion > Triangles"],["Home & Garden|Household Supplies & Cleaning|Home Organization|Closet Organizers",1169,"Home & Living > Storage & Organization > Garage Storage"],["Collectibles|Historical Memorabilia|Political|US|Reproduction & Fantasy Items",2067,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Maps"],["Home & Garden|Bath|Bathroom Accessories|Soap Dishes & Dispensers",1921,"Home & Living > Bathroom > Soap Dishes & Dispensers > Soap Dispensers"],["Jewelry & Watches|Men's Jewelry|Bolo Ties",50,"Accessories > Suit & Tie Accessories > Bolo Ties"],["Collectibles|Transportation|Railroadiana & Trains|Hardware|Spikes & Nails",12232,"Home & Living > Home Decor > Wall Decor > Key Holders & Key Hooks"],["Health & Beauty|Medical & Mobility|Mobility/Walking Equipment|Crutches",272,"Bath & Beauty > Personal Care > Canes & Walking"],["Collectibles|Animals|Amphibians & Reptiles|Snakes",6086,"Home & Living > Home Decor > Home Accents > Taxidermy & Curiosities > Animal Mounts"],["Collectibles|Transportation|Railroadiana & Trains|Other Railroadiana",2813,"Home & Living > Lighting > Lamps, Shades & Bases > Lamps > Desk Lamps"],["Collectibles|Rocks, Fossils & Minerals|Crystals & Mineral Specimens|Crystals",1158,"Home & Living > Spirituality & Religion > Prayer Beads & Charms > Metaphysical Crystals"],["Pet Supplies|Dog Supplies|Leashes & Head Collars",12232,"Home & Living > Home Decor > Wall Decor > Key Holders & Key Hooks"],["Business & Industrial|Cleaning & Janitorial Supplies|Manual Cleaning Equipment|Squeegees & Replacement Blades",924,"Home & Living > Cleaning Supplies > Cleaning Products"],["Toys & Hobbies|Puzzles|Contemporary Puzzles|Brain Teasers & Cube/Twist",12620,"Toys & Games > Games & Puzzles > Puzzles > 3D Puzzles"],["Toys & Hobbies|Stuffed Animals|Princess Soft Toys",1341,"Paper & Party Supplies > Party Supplies > Party Decor > Party Hats & Crowns"],["Home & Garden|Yard, Garden & Outdoor Living|Décor|Wind Chimes",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Collectibles|Historical Memorabilia|Firefighting & Rescue|Pins & Buttons",41,"Accessories > Pins & Clips > Pins & Pinback Buttons"],["Home & Garden|Yard, Garden & Outdoor Living|Garden Hand Tools & Equipment|Pruning Shears & Snips",1112,"Home & Living > Outdoor & Gardening > Gardening Tools"],["Collectibles|Holiday & Seasonal|Props",1332,"Paper & Party Supplies > Party Supplies > Party Decor > Backdrops & Props"],["Home & Garden|Home Décor|Posters & Prints",2845,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Address Signs"],["Collectibles|Knives, Swords & Blades|Collectible Folding Knives|Modern Folding Knives|Factory Manufactured",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Kitchen & Home|Cookware|Other Collectible Cookware",6487,"Home & Living > Kitchen & Dining > Cookware > Pots & Pans > Pots > Boilers & Kettles"],["Collectibles|Tools, Hardware & Locks|Locks, Keys",2108,"Home & Living > Home Improvement > Doors & Locks > Locks"],["Collectibles|Breweriana, Beer|Openers",1057,"Home & Living > Kitchen & Dining > Drink & Barware > Barware > Bottle Openers"],["Home & Garden|Household Supplies & Cleaning|Cleaning Tools|Cleaning Towels & Cloths",9339,"Home & Living > Cleaning Supplies > Cloths & Sponges > Polishing Cloths"],["Home & Garden|Bath|Bathroom Accessories|Toilet Paper Holders & Storage",12442,"Home & Living > Bathroom > Toilet Paper Holders"],["Entertainment Memorabilia|Movie Memorabilia|Other Movie Memorabilia",12110,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Marquee Letters & Signs"],["Collectibles|Militaria|Vietnam (1961-75)|Reproductions",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Bottles & Insulators|Bottles|Modern (1900-Now)|Food, Sauces & Condiments",956,"Home & Living > Food & Drink > Condiments & Sauces"],["Home & Garden|Rugs & Carpets|Door Mats & Floor Mats",12450,"Home & Living > Floor & Rugs > Door Mats"],["Home & Garden|Kitchen, Dining & Bar|Dinnerware & Serveware|Plates",12212,"Home & Living > Spirituality & Religion > Religious Home & Decor > Chowkis"],["Collectibles|Decorative Collectibles|Plaques & Signs",2845,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Address Signs"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Storage & Organization|Paper Towel Holders",12376,"Home & Living > Kitchen & Dining > Kitchen Storage > Paper Towel Holders"],["Collectibles|Animals|Fish & Marine|Fish",6086,"Home & Living > Home Decor > Home Accents > Taxidermy & Curiosities > Animal Mounts"],["Home & Garden|Lamps, Lighting & Ceiling Fans|Light Bulbs",10812,"Home & Living > Home Improvement > Lighting Parts > Light Bulbs"],["Home & Garden|Bath|Shower & Bathtub Accessories|Shower Curtains",1918,"Home & Living > Bathroom > Shower Curtains & Rings > Shower Curtains"],["Musical Instruments & Gear|Wind & Woodwind|Folk & World|Whistles",2042,"Books, Movies & Music > Music > Musical Instruments > Woodwinds > Whistles"],["Collectibles|Kitchen & Home|Dinnerware & Serveware|Bowls",1044,"Home & Living > Kitchen & Dining > Dining & Serving > Bowls"],["Home & Garden|Kitchen, Dining & Bar|Dinnerware & Serveware|Mugs",1062,"Home & Living > Kitchen & Dining > Drink & Barware > Drinkware > Mugs"],["Toys & Hobbies|Games|Board & Traditional Games|Contemporary Manufacture",1622,"Toys & Games > Toys > Push & Pull Toys > Vehicles"],["Crafts|Leathercrafts|Leathercraft Accessories|Conchos",6442,"Craft Supplies & Tools > Decorations & Embellishments > Bolos & Conchos"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Hats",468,"Clothing > Gender-Neutral Adult Clothing > Costumes"],["Toys & Hobbies|Outdoor Toys & Structures|Balls, Flying Discs & Boomerangs",1792,"Toys & Games > Toys > Stress Balls & Desk Toys > Stress Balls"],["Collectibles|Decorative Collectibles|Paperweights",1103,"Home & Living > Office > Paperweights"],["Health & Beauty|Natural & Alternative Remedies|Aromatherapy",1007,"Home & Living > Home Decor > Candles & Home Fragrances > Home Fragrances > Incense"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Costumes|Men",11,"Accessories > Costume Accessories > Facial Hair"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Wigs & Facial Hair",504,"Clothing > Women's Clothing > Costumes"],["Collectibles|Historical Memorabilia|Police|Keychains",165,"Accessories > Keychains & Lanyards > Keychains"],["Collectibles|Advertising|Merchandise & Memorabilia|Signs|Reproduction",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Knives, Swords & Blades|Blade Parts, Supplies & Accs|Stands, Hangers & Plaques",6264,"Craft Supplies & Tools > Frames, Hoops & Stands > Stands"],["Collectibles|Transportation|Railroadiana & Trains|Hardware|Lanterns & Lamps",2914,"Home & Living > Lighting > Lamps, Shades & Bases > Lamps > Accent Lamps"],["Toys & Hobbies|Outdoor Toys & Structures|Sand & Water Toys|Floats, Rafts",1577,"Toys & Games > Sports & Outdoor Recreation > Boating & Water Sports > Sand & Water Toys"],["Collectibles|Historical Memorabilia|Fraternal Organizations|Masonic, Freemasonry|Rings & Watches",6074,"Jewelry > Watches > Wrist Watches > Men's Wrist Watches"],["Collectibles|Knives, Swords & Blades|TV, Film & Game Replica Blades",10,"Accessories > Costume Accessories > Costume Weapons"],["Collectibles|Militaria|Militaria (Date Unknown)|Air Force",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Fantasy, Mythical & Magic|Fairies|Other Fairy Collectibles",2867,"Home & Living > Outdoor & Gardening > Garden Decoration > Outdoor Statues"],["Collectibles|Transportation|Boats & Ships|Cruise Ships & Ocean Liners|Other Cruise Ship Collectibles",6411,"Craft Supplies & Tools > Pens, Pencils & Marking Tools > Pencil Sharpeners"],["Collectibles|Animals|Dogs|Scottish Terrier",1419,"Pet Supplies > Pet Toys > Dog Toys"],["Collectibles|Transportation|Railroadiana & Trains|Signs & Plaques",12110,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Marquee Letters & Signs"],["Collectibles|Pens & Writing Instruments|Pens|Ballpoint Pens|Other Collectible Ballpoint",6745,"Craft Supplies & Tools > Pens, Pencils & Marking Tools > Pens > Ballpoint Pens"],["Sports Mem, Cards & Fan Shop|Fan Apparel & Souvenirs|College-NCAA",6064,"Electronics & Accessories > Car Parts & Accessories > Car Accessories > Decorative License Plates"],["Collectibles|Militaria|Current Militaria (2001-Now)|Reproductions",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Historical Memorabilia|Fraternal Organizations|Masonic, Freemasonry|Other Freemason Collectibles",196,"Bags & Purses > Wallets & Money Clips > Money Clips"],["Antiques|Science & Medicine (Pre-1930)|Medicine|Other Medical Antiques",12110,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Marquee Letters & Signs"],["Health & Beauty|Medical & Mobility|Mobility/Walking Equipment|Walkers & Canes",272,"Bath & Beauty > Personal Care > Canes & Walking"],["Home & Garden|Home Improvement|Heating, Cooling & Air|Fireplaces & Stoves|Fireplace & Stove Accessories",12219,"Home & Living > Home Decor > Fireplace Screens"],["Home & Garden|Tools & Workshop Equipment|Hand Tools|Pliers",6931,"Craft Supplies & Tools > Tools & Equipment > Tools > Pliers, Tweezers & Tongs > Pliers"],["Jewelry & Watches|Handcrafted & Artisan Jewelry|Necklaces & Pendants",1229,"Jewelry > Necklaces > Pendant Necklaces"],["Collectibles|Historical Memorabilia|Police|Other Police Collectibles",196,"Bags & Purses > Wallets & Money Clips > Money Clips"],["Business & Industrial|Office|Office Supplies|Calendars & Planners|Planners & Organizers",161,"Bags & Purses > Handbags > Shoulder Bags"],["Clothing, Shoes & Accessories|Women|Women's Clothing|Hosiery & Socks|Socks",2134,"Clothing > Gender-Neutral Kids' Clothing > Gender-Neutral Baby Clothing > Socks & Leg Warmers > Socks"],["Home & Garden|Greeting Cards & Party Supply|Party Supplies|Party Decorations",1341,"Paper & Party Supplies > Party Supplies > Party Decor > Party Hats & Crowns"],["Health & Beauty|Medical & Mobility|Orthopedics & Supports|Compression Garments",540,"Clothing > Women's Clothing > Socks & Hosiery > Casual Socks"],["Jewelry & Watches|Body Jewelry",1184,"Jewelry > Body Jewelry > Belly Chains"],["Clothing, Shoes & Accessories|Specialty|Vintage|Vintage Accessories|Hand Fans",11245,"Accessories > Hand Fans"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Hats",468,"Clothing > Gender-Neutral Adult Clothing > Costumes"],["Jewelry & Watches|Men's Jewelry|Necklaces & Pendants",1229,"Jewelry > Necklaces > Pendant Necklaces"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Costumes|Women",12168,"Accessories > Hair Accessories > Hair Jewelry > Hair Chains & Headpieces"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Sunglasses & Sunglasses Accessories|Accessories",60,"Accessories > Sunglasses & Eyewear > Glasses Cases"],["Jewelry & Watches|Men's Jewelry|Tie Clasps & Tacks",2851,"Accessories > Suit & Tie Accessories > Cuff Links & Tie Clips > Tie Bars"],["Pet Supplies|Dog Supplies|Collars",1384,"Pet Supplies > Pet Collars & Leashes > Pet Collars"],["Health & Beauty|Makeup|Makeup Tools & Accessories|Brushes",233,"Bath & Beauty > Hair Care > Hair Styling > Brushes & Combs"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Belts",3,"Accessories > Belts & Suspenders > Belt Buckles"],["Jewelry & Watches|Men's Jewelry|Bracelets & Charms",1156,"Home & Living > Spirituality & Religion > Prayer Beads & Charms > Prayer Beads"],["Travel|Luggage Accessories|Other Luggage Accessories",12069,"Bags & Purses > Luggage & Travel > Luggage Covers"],["Clothing, Shoes & Accessories|Kids|Boys|Boys' Accessories|Wallets",196,"Bags & Purses > Wallets & Money Clips > Money Clips"],["Clothing, Shoes & Accessories|Women|Women's Bags & Handbags",181,"Bags & Purses > Messenger Bags"],["Clothing, Shoes & Accessories|Specialty|Other Clothing, Shoes & Accessories",134,"Bags & Purses > Accessory Cases > Cigarette Cases"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Key Chains, Rings & Cases",193,"Bags & Purses > Wallets & Money Clips > Chain Wallets"],["Travel|Travel Accessories|Passport & ID Holders",175,"Bags & Purses > Luggage & Travel > Passport Covers"],["Business & Industrial|Office|Office Supplies|Desk Accessories|Business Card Holders",192,"Bags & Purses > Wallets & Money Clips > Business Card Cases"],["Collectibles|Tobacciana|Cases",134,"Bags & Purses > Accessory Cases > Cigarette Cases"],["Collectibles|Tobacciana|Cigars|Cigar Cases & Holders",134,"Bags & Purses > Accessory Cases > Cigarette Cases"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Belts",3,"Accessories > Belts & Suspenders > Belt Buckles"],["Clothing, Shoes & Accessories|Men|Men's Accessories|ID & Document Holders",12652,"Accessories > Keychains & Lanyards > Badge Reels"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Bags",150,"Bags & Purses > Fanny Packs"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Wallets",196,"Bags & Purses > Wallets & Money Clips > Money Clips"],["Home & Garden|Home Improvement|Building & Hardware|Mailboxes, Slots & Hardware|Mailbox Hardware",1116,"Home & Living > Outdoor & Gardening > Mailboxes"],["Crafts|Sewing|Embellishments & Finishes|Patches",40,"Accessories > Patches & Appliques"],["Home & Garden|Yard, Garden & Outdoor Living|Décor|Windmills & Wind Spinners",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Collectibles|Historical Memorabilia|Flags & Pennants|International Country Flags|Other Flags of the World",1339,"Paper & Party Supplies > Party Supplies > Party Decor > Garlands, Flags & Bunting"],["Business & Industrial|Retail & Services|Business Signs",1334,"Paper & Party Supplies > Party Supplies > Party Decor > Banners & Signs"],["Home & Garden|Greeting Cards & Party Supply|Party Supplies|Banners, Bunting & Garlands",1339,"Paper & Party Supplies > Party Supplies > Party Decor > Garlands, Flags & Bunting"],["Sporting Goods|Cycling|Bicycle Accessories|Other Bicycle Accessories",2364,"Toys & Games > Sports & Outdoor Recreation > Bikes & Cycling > Cycling Accessories"],["Collectibles|Historical Memorabilia|Flags & Pennants|Decorative Flags",12446,"Home & Living > Home Decor > Home Accents > Decorative Compasses"],["Collectibles|Historical Memorabilia|Flags & Pennants|United States, Country Flags",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Capes, Coats & Cloaks",7,"Accessories > Costume Accessories > Capes"],["Home & Garden|Yard, Garden & Outdoor Living|Décor|Flag Poles & Parts",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Home & Garden|Yard, Garden & Outdoor Living|Décor|Flags",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Collectibles|Religion & Spirituality|Christianity|Holy Cards",1157,"Home & Living > Spirituality & Religion > Prayer Beads & Charms > Prayer Cards"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Scarves & Wraps",46,"Accessories > Scarves & Wraps > Scarves"],["Collectibles|Religion & Spirituality|Christianity|Holy Water Fonts",12206,"Home & Living > Spirituality & Religion > Altars, Shrines & Tools > Home Temples & Shrines"],["Pottery & Glass|Decorative Pottery & Glassware|Candle Sticks & Holders",2214,"Home & Living > Home Decor > Candles & Home Fragrances > Candleholders > Candlestick Holders"],["Baby|Nursery Décor|Mobiles",1022,"Home & Living > Home Decor > Mobiles"],["Collectibles|Religion & Spirituality|Christianity|Charms",1156,"Home & Living > Spirituality & Religion > Prayer Beads & Charms > Prayer Beads"],["Books & Magazines|Accessories|Bookmarks",331,"Books, Movies & Music > Books > Book Accessories > Bookmarks"],["Home & Garden|Holiday & Seasonal Décor|Nativity Items",6099,"Home & Living > Spirituality & Religion > Religious Home & Decor > Nativity Sets"],["Collectibles|Religion & Spirituality|Christianity|Boxes",12207,"Home & Living > Spirituality & Religion > Altars, Shrines & Tools > Deity Thrones & Swings"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Key Chains, Rings & Finders",165,"Accessories > Keychains & Lanyards > Keychains"],["Home & Garden|Food & Beverages|Pantry|Sweets & Chocolate|Candy|Boiled & Hard Sweets",945,"Home & Living > Food & Drink > Candy > Lollipops"],["Pottery & Glass|Decorative Cookware, Dinnerware & Serveware|Bowls",1044,"Home & Living > Kitchen & Dining > Dining & Serving > Bowls"],["Home & Garden|Candles & Home Fragrance|Candles",1009,"Home & Living > Home Decor > Candles & Home Fragrances > Candles > Pillar Candles"],["Jewelry & Watches|Fashion Jewelry|Brooches & Pins",1682,"Weddings > Jewelry > Brooches"],["Home & Garden|Bedding|Blankets & Throws",915,"Home & Living > Bedding > Blankets & Throws > Throws"],["Collectibles|Holiday & Seasonal|Yard Décor",2784,"Home & Living > Outdoor & Gardening > Garden Decoration > Yard Art"],["Collectibles|Decorative Collectibles|Candle Holders",2214,"Home & Living > Home Decor > Candles & Home Fragrances > Candleholders > Candlestick Holders"],["Collectibles|Holiday & Seasonal|Ornaments",1857,"Home & Living > Home Decor > Seasonal Decor > Ornaments"],["Business & Industrial|Office|Office Supplies|Pens, Pencils & Markers|Ballpoint & Rollerball Pens",6748,"Craft Supplies & Tools > Pens, Pencils & Marking Tools > Pens > Gel Pens"],["Collectibles|Religion & Spirituality|Christianity|Vestments",2849,"Home & Living > Spirituality & Religion > Religious Clothing > Vestments"],["Pottery & Glass|Decorative Pottery & Glassware|Figurines",69,"Art & Collectibles > Collectibles > Figurines & Knick Knacks"],["Collectibles|Religion & Spirituality|Christianity|Jewelry",1229,"Jewelry > Necklaces > Pendant Necklaces"],["Collectibles|Holiday & Seasonal|Figurines",69,"Art & Collectibles > Collectibles > Figurines & Knick Knacks"],["Collectibles|Religion & Spirituality|Christianity|Crucifixes & Crosses",1152,"Home & Living > Spirituality & Religion > Religious Home & Decor > Crucifixes & Crosses"],["Collectibles|Decorative Collectibles|Sculptures & Figurines",69,"Art & Collectibles > Collectibles > Figurines & Knick Knacks"],["Collectibles|Decorative Collectibles|Bells",6081,"Home & Living > Home Decor > Home Accents > Bells"],["Collectibles|Religion & Spirituality|Christianity|Statues & Figures",2869,"Home & Living > Home Decor > Home Accents > Statues"],["Collectibles|Religion & Spirituality|Christianity|Rosaries",1159,"Home & Living > Spirituality & Religion > Prayer Beads & Charms > Rosaries"],["Collectibles|Religion & Spirituality|Christianity|Icons",12206,"Home & Living > Spirituality & Religion > Altars, Shrines & Tools > Home Temples & Shrines"],["Jewelry & Watches|Fashion Jewelry|Bracelets & Charms",1156,"Home & Living > Spirituality & Religion > Prayer Beads & Charms > Prayer Beads"],["Collectibles|Religion & Spirituality|Christianity|Plates & Plaques",12212,"Home & Living > Spirituality & Religion > Religious Home & Decor > Chowkis"],["Jewelry & Watches|Fine Jewelry|Necklaces & Pendants",1229,"Jewelry > Necklaces > Pendant Necklaces"],["Collectibles|Religion & Spirituality|Christianity|Medals",1152,"Home & Living > Spirituality & Religion > Religious Home & Decor > Crucifixes & Crosses"],["Everything Else|Religious Products & Supplies|Other Religious Supplies",12162,"Home & Living > Spirituality & Religion > Religious Candles & Incense > Diyas"],["Everything Else|Religious Products & Supplies|Communion Accessories",1144,"Home & Living > Spirituality & Religion > Religious Candles & Incense > Incense"],["Collectibles|Religion & Spirituality|Buddhism|Incense & Incense Holders",1007,"Home & Living > Home Decor > Candles & Home Fragrances > Home Fragrances > Incense"],["Collectibles|Religion & Spirituality|Christianity|Other Christian Collectibles",12206,"Home & Living > Spirituality & Religion > Altars, Shrines & Tools > Home Temples & Shrines"],["Collectibles|Religion & Spirituality|Christianity|Relics",1152,"Home & Living > Spirituality & Religion > Religious Home & Decor > Crucifixes & Crosses"],["Toys & Hobbies|Diecast & Toy Vehicles|Accessories, Parts & Display|Figures",1585,"Toys & Games > Toys > Dolls & Action Figures > Action Figures"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Oil & Vinegar Dispensers",12457,"Home & Living > Kitchen & Dining > Dining & Serving > Olive Oil & Vinegar Cruets"],["Clothing, Shoes & Accessories|Baby|Baby & Toddler Clothing|Socks & Tights",2134,"Clothing > Gender-Neutral Kids' Clothing > Gender-Neutral Baby Clothing > Socks & Leg Warmers > Socks"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Measuring Cups & Spoons",6494,"Home & Living > Kitchen & Dining > Cookware > Cooking Utensils & Gadgets > Measuring Cups & Spoons"],["Health & Beauty|Shaving & Hair Removal|Hair Removal Creams & Sprays",288,"Bath & Beauty > Personal Care > Shaving & Grooming > Shaving Lubricants"],["Collectibles|Pez, Keychains, Promo Glasses|Keychains|Modern (1970-Now)",165,"Accessories > Keychains & Lanyards > Keychains"],["Health & Beauty|Salon & Spa Equipment|Styling Capes & Gowns",12643,"Accessories > Aprons"],["Health & Beauty|Shaving & Hair Removal|Electric Shaving & Hair Removal|Epilators & Electrolysis",285,"Bath & Beauty > Personal Care > Shaving & Grooming > Razors"],["Clothing, Shoes & Accessories|Women|Women's Accessories|ID & Document Holders",12652,"Accessories > Keychains & Lanyards > Badge Reels"],["Pet Supplies|Dog Supplies|Dog Chews & Treats",1419,"Pet Supplies > Pet Toys > Dog Toys"],["Health & Beauty|Hair Care & Styling|Hair Color",229,"Bath & Beauty > Hair Care > Hair Dye & Color > Hair Chalks"],["Health & Beauty|Nail Care, Manicure & Pedicure|Nail Care Tools|Nail Dryers & Lamps",1998,"Bath & Beauty > Makeup & Cosmetics > Nails > Nail Tools & Brushes > Dotting Tools"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Wallets",196,"Bags & Purses > Wallets & Money Clips > Money Clips"],["Health & Beauty|Hair Care & Styling|Hair Extensions & Wigs|Wigs & Hairpieces",240,"Bath & Beauty > Hair Care > Wigs"],["Clothing, Shoes & Accessories|Men|Men's Accessories|Ties",51,"Accessories > Suit & Tie Accessories > Bow Ties"],["Health & Beauty|Bath & Body|Bath Brushes & Sponges",213,"Bath & Beauty > Bath Accessories > Sponges & Body Brushes"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Accessory Sets",504,"Clothing > Women's Clothing > Costumes"],["Clothing, Shoes & Accessories|Women|Women's Clothing|Intimates & Sleep|Garter Belts",543,"Clothing > Women's Clothing > Socks & Hosiery > Garters"],["Collectibles|Vanity, Perfume & Shaving|Perfumes|Decorative Glass/Crystal",2160,"Bags & Purses > Cosmetic & Toiletry Storage > Vanity Storage > Atomizers & Perfume Bottles"],["Health & Beauty|Nail Care, Manicure & Pedicure|Nail Care Tools|Manicure & Pedicure Tools & Kits",9132,"Bath & Beauty > Makeup & Cosmetics > Nails > Nail Tools & Brushes > Nail Files"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Gloves & Mittens",1764,"Accessories > Gloves & Sleeves > Mittens"],["Health & Beauty|Shaving & Hair Removal|Shaving Brushes & Mugs",286,"Bath & Beauty > Personal Care > Shaving & Grooming > Shaving Brushes & Cups"],["Health & Beauty|Makeup|Makeup Tools & Accessories|Eyelash Tools",261,"Bath & Beauty > Makeup & Cosmetics > Makeup Tools & Brushes > Makeup Applicators"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Hair Accessories",225,"Accessories > Hair Accessories > Headbands"],["Health & Beauty|Makeup|Face|Blush",249,"Bath & Beauty > Makeup & Cosmetics > Face > Blush & Cheek Stain"],["Jewelry & Watches|Jewelry Care, Design & Repair|Jewelry Findings",6283,"Craft Supplies & Tools > Findings > Chain Links"],["Home & Garden|Kitchen, Dining & Bar|Small Kitchen Appliances|Coffee, Tea & Espresso Makers|Tea Infusers",12603,"Home & Living > Kitchen & Dining > Coffee & Tea Makers > Tea Makers > Tea Strainers"],["Home & Garden|Kitchen, Dining & Bar|Flatware, Knives & Cutlery|Single Flatware Pieces",1048,"Home & Living > Kitchen & Dining > Dining & Serving > Flatware & Silverware"],["Jewelry & Watches|Fashion Jewelry|Rings",1246,"Jewelry > Rings > Wedding & Engagement > Promise Rings"],["Jewelry & Watches|Watches, Parts & Accessories|Watches|Other Watches",6076,"Jewelry > Watches > Wrist Watches > Unisex Wrist Watches"],["Health & Beauty|Nail Care, Manicure & Pedicure|Nail Polish & Powders|Gel Nail Polish",1997,"Bath & Beauty > Makeup & Cosmetics > Nails > Nail Art > DIY Polish Supplies"],["Jewelry & Watches|Fashion Jewelry|Jewelry Sets",2115,"Jewelry > Jewelry Sets"],["Sporting Goods|Camping & Hiking|Outdoor Survival Gear|Other Outdoor Survival Gear",165,"Accessories > Keychains & Lanyards > Keychains"],["Health & Beauty|Hair Care & Styling|Brushes & Combs",233,"Bath & Beauty > Hair Care > Hair Styling > Brushes & Combs"],["Jewelry & Watches|Men's Jewelry|Cufflinks",2316,"Weddings > Jewelry > Cuff Links & Tie Clips > Shirt Studs"],["Health & Beauty|Hair Care & Styling|Hair Loss Treatments",2003,"Bath & Beauty > Personal Care > Shaving & Grooming > Beard & Mustache > Balms & Conditioner"],["Jewelry & Watches|Watches, Parts & Accessories|Watches|Pocket Watches",2917,"Jewelry > Watches > Watch Necklaces"],["Jewelry & Watches|Men's Jewelry|Earrings",1214,"Jewelry > Earrings > Stud Earrings"],["Jewelry & Watches|Fashion Jewelry|Earrings",1214,"Jewelry > Earrings > Stud Earrings"],["Health & Beauty|Makeup|Makeup Sets & Kits",2089,"Bath & Beauty > Makeup & Cosmetics > Eyes > Eyelashes & Mascara > Eyelashes"],["Health & Beauty|Makeup|Makeup Tools & Accessories|Sponges, Applicators & Cotton",261,"Bath & Beauty > Makeup & Cosmetics > Makeup Tools & Brushes > Makeup Applicators"],["Jewelry & Watches|Watches, Parts & Accessories|Watches|Wristwatches",6074,"Jewelry > Watches > Wrist Watches > Men's Wrist Watches"],["Home & Garden|Yard, Garden & Outdoor Living|Décor|Ornaments & Statues",2867,"Home & Living > Outdoor & Gardening > Garden Decoration > Outdoor Statues"],["Home & Garden|Kitchen, Dining & Bar|Kitchen Tools & Gadgets|Cooking Utensils",1038,"Home & Living > Kitchen & Dining > Cookware > Cutting Boards"],["Pet Supplies|Dog Supplies|Dishes, Feeders & Fountains",1390,"Pet Supplies > Pet Feeding > Pet Bowls"],["Collectibles|Fantasy, Mythical & Magic|Mermaids",6102,"Jewelry > Jewelry Storage > Jewelry Boxes"],["Home & Garden|Holiday & Seasonal Décor|Ornaments",1857,"Home & Living > Home Decor > Seasonal Decor > Ornaments"],["Toys & Hobbies|Beanbag Plush|Ty|Beanie Babies-Original|Current",1582,"Toys & Games > Toys > Balls"],["Toys & Hobbies|Beanbag Plush|Ty|Beanie Babies-Original|Retired",6067,"Toys & Games > Toys > Stuffed Animals & Plushies > Dogs"],["Home & Garden|Household Supplies & Cleaning|Home Organization|Hooks & Hangers",12232,"Home & Living > Home Decor > Wall Decor > Key Holders & Key Hooks"],["Crafts|Beads & Jewelry Making|Jewelry Making Cord & Wire",6389,"Craft Supplies & Tools > String, Cord & Wire > Cord"],["Everything Else|Genealogy|Family Trees",6590,"Craft Supplies & Tools > Canvas & Surfaces > Paper > Poster Board"],["Collectibles|Militaria|Civil War (1861-65)|Reenactment & Reproductions|Other Civil War Reproductions",12655,"Accessories > Pins & Clips > Badges"],["Collectibles|Historical Memorabilia|Political|US|Presidents & First Ladies",2867,"Home & Living > Outdoor & Gardening > Garden Decoration > Outdoor Statues"],["Musical Instruments & Gear|Other Musical Instruments",2014,"Books, Movies & Music > Music > Musical Instruments > Stringed Instruments > Banjos"],["Collectibles|Historical Memorabilia|Astronauts & Space Travel|Exploration Missions|Apollo",6450,"Craft Supplies & Tools > Doll & Model Supplies > Miniatures"],["Collectibles|Militaria|Civil War (1861-65)|Reenactment & Reproductions|Belts & Belt Buckles",3,"Accessories > Belts & Suspenders > Belt Buckles"],["Home & Garden|Home Décor|Plaques & Signs",2845,"Home & Living > Home Decor > Wall Decor > Wall Hangings > Signs > Address Signs"],["Collectibles|Militaria|Civil War (1861-65)|Other Civil War-Related Items",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Glasses",468,"Clothing > Gender-Neutral Adult Clothing > Costumes"],["Clothing, Shoes & Accessories|Women|Women's Accessories|Fascinators & Headpieces",12168,"Accessories > Hair Accessories > Hair Jewelry > Hair Chains & Headpieces"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Wings, Tails, Ears & Noses",1760,"Accessories > Costume Accessories > Costume Tails"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Crowns & Tiaras",1803,"Weddings > Accessories > Hair Accessories > Wreaths & Tiaras > Tiaras"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Masks & Eye Masks",12653,"Accessories > Sunglasses & Eyewear > Eye Patches"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Other Costume Accessories",1761,"Accessories > Costume Accessories > Costume Ears"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Hats & Headgear",468,"Clothing > Gender-Neutral Adult Clothing > Costumes"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Costumes|Unisex",468,"Clothing > Gender-Neutral Adult Clothing > Costumes"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Costumes|Boys",389,"Clothing > Boys' Clothing > Costumes"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Handhelds & Props",1768,"Accessories > Costume Accessories > Costume Masks"],["Clothing, Shoes & Accessories|Specialty|Costumes, Reenactment, Theater|Accessories|Handhelds & Props",468,"Clothing > Gender-Neutral Adult Clothing > Costumes"],["Home & Garden|Bath|Bathroom Accessories|Towel Racks",910,"Home & Living > Bathroom > Towel Racks & Rods"],["Collectibles|Historical Memorabilia|Fraternal Organizations|Masonic, Freemasonry|Tokens & Masonic Coins",68,"Art & Collectibles > Collectibles > Coins & Money"],["Collectibles|Tools, Hardware & Locks|Tools|Pulleys, Block & Tackle",127,"Art & Collectibles > Prints > Wood & Linocut Prints"],["Collectibles|Militaria|WW II (1939-45)|Reproductions|United States",71,"Art & Collectibles > Collectibles > Memorabilia > Militaria"],["Collectibles|Decorative Collectibles|Other Decorative Collectibles",12232,"Home & Living > Home Decor > Wall Decor > Key Holders & Key Hooks"],["Dolls & Bears|Dollhouse Miniatures|Dollhouse Furniture",1604,"Art & Collectibles > Dolls & Miniatures > Miniatures > Dollhouse Miniatures > Doll Furniture"],["Antiques|Architectural & Garden|Hardware|Hooks, Brackets & Curtain Rods",12232,"Home & Living > Home Decor > Wall Decor > Key Holders & Key Hooks"],["Collectibles|Pens & Writing Instruments|Desktop Items|Pencil Sharpeners",6411,"Craft Supplies & Tools > Pens, Pencils & Marking Tools > Pencil Sharpeners"],["Home & Garden|Household Supplies & Cleaning|Home Organization|Coat & Hat Racks",1170,"Home & Living > Storage & Organization > Hooks & Fixtures"],["Toys & Hobbies|Diecast & Toy Vehicles|Cars: Racing, NASCAR|Rally Cars",1622,"Toys & Games > Toys > Push & Pull Toys > Vehicles"],["Jewelry & Watches|Fashion Jewelry|Necklaces & Pendants",1229,"Jewelry > Necklaces > Pendant Necklaces"],["Sports Mem, Cards & Fan Shop|Sports Trading Cards|Trading Card Singles",1865,"Art & Collectibles > Artist Trading Cards"],["Toys & Hobbies|Diecast & Toy Vehicles|Cars, Trucks & Vans|Contemporary Manufacture",1622,"Toys & Games > Toys > Push & Pull Toys > Vehicles"],["Books & Magazines|Books",343,"Books, Movies & Music > Books > Guides & How Tos"]];
+const CAT = { rows:[], custom:false, etsyList:[], byId:new Map(), byPath:new Map(), byPathLower:new Map(), ebayFull:new Map(), ebayLeaf:new Map(), promptBlock:'' };
+
+function normCat(s){
+  return String(s||'').replace(/&amp;/gi,'&').toLowerCase()
+    .split(/\s*(?:\||>|»|›|→|\\|\/)\s*/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean).join('|');
+}
+function catAddTo(map, key, entry){
+  const arr = map.get(key) || [];
+  if(!arr.includes(entry)) arr.push(entry);
+  map.set(key, arr);
+}
+function buildCategoryIndex(rows){
+  CAT.rows = rows;
+  CAT.byId = new Map(); CAT.byPath = new Map(); CAT.byPathLower = new Map();
+  CAT.ebayFull = new Map(); CAT.ebayLeaf = new Map();
+  let synthetic = 900000;
+  rows.forEach(r=>{
+    const path = String(r[2]||'').replace(/\s+/g,' ').trim();
+    if(!path) return;
+    let entry = CAT.byPath.get(path);
+    if(!entry){
+      let id = Number(r[1]);
+      if(!id || CAT.byId.has(id)) id = ++synthetic; // ID yoksa/çakışıyorsa dahili numara (export'a girmez)
+      entry = { id, path };
+      CAT.byPath.set(path, entry);
+      CAT.byPathLower.set(path.toLowerCase(), entry);
+      CAT.byId.set(id, entry);
+    }
+    const key = normCat(r[0]);
+    if(key){
+      catAddTo(CAT.ebayFull, key, entry);
+      catAddTo(CAT.ebayLeaf, key.split('|').pop(), entry);
+    }
+  });
+  CAT.etsyList = [...CAT.byPath.values()].sort((a,b)=>a.path.localeCompare(b.path));
+  CAT.promptBlock = CAT.etsyList.map(e=>`${e.id} | ${e.path}`).join('\n');
+  const dl = $('catlist');
+  if(dl) dl.innerHTML = CAT.etsyList.map(e=>`<option value="${escapeHtml(e.path)}"></option>`).join('');
+  renderCatmapStatus();
+}
+function loadCategoryMap(){
+  let rows = null;
+  try{
+    const raw = localStorage.getItem(CATMAP_STORAGE);
+    if(raw){ const parsed = JSON.parse(raw); if(Array.isArray(parsed) && parsed.length) rows = parsed; }
+  }catch(e){ /* ignore */ }
+  CAT.custom = !!rows;
+  buildCategoryIndex(rows || DEFAULT_CATEGORY_MAP);
+}
+function renderCatmapStatus(){
+  const el = $('catmapStatus'); if(!el) return;
+  el.innerHTML = `<span style="color:var(--success);">✓ ${CAT.ebayFull.size} eBay kategorisi → ${CAT.etsyList.length} Etsy kategorisi yüklü (${CAT.custom ? 'senin yüklediğin tablo' : 'varsayılan tablo'})</span>`;
+  const rb = $('catmapResetBtn'); if(rb) rb.style.display = CAT.custom ? 'inline-flex' : 'none';
+}
+
+/* Ürün verisinde eBay kategorisi var mı? Tüm metin hücrelerine bakar; tablo anahtarlarıyla aynı şekilde normalize edip eşler. */
+function findEbayMatch(rawRow){
+  if(!rawRow || !CAT.ebayFull.size) return null;
+  const keys = [...CAT.ebayFull.keys()];
+  let partial = null;
+  for(const [col, val] of Object.entries(rawRow)){
+    if(typeof val !== 'string' || val.length < 3 || val.length > 400 || /^https?:\/\//i.test(val)) continue;
+    const n = normCat(val);
+    if(!n) continue;
+    const exact = CAT.ebayFull.get(n);
+    if(exact) return { entries: exact, ebay: n, via: 'tam' };
+    const segs = n.split('|');
+    if(segs.length >= 2){
+      for(const k of keys){
+        if(k.endsWith('|'+n) || n.endsWith('|'+k)){
+          if(!partial || k.length > partial.k.length) partial = { k, entries: CAT.ebayFull.get(k) };
+        }
+      }
+    }else if(/categ|kategori|type|department|breadcrumb/i.test(col)){
+      const leaf = CAT.ebayLeaf.get(n);
+      if(leaf && !partial) partial = { k: n, entries: leaf };
+    }
+  }
+  return partial ? { entries: partial.entries, ebay: partial.k, via: 'kısmi' } : null;
+}
+
+/* AI'ya verilecek kategori talimatı + (deterministikse) şema dışı bırakma */
+function buildCategoryContext(hint, mode){
+  const det = !!(hint && hint.entries.length === 1 && mode === 'table-first');
+  if(det) return { det: true, schema: '', block: '' };
+  let hintLine = '';
+  if(hint && hint.entries.length > 1){
+    hintLine = `\nVeride eBay kategorisi bulundu ("${hint.ebay}"). Tabloya göre bu kategori birden fazla Etsy kategorisine denk geliyor: ${hint.entries.map(e=>`${e.id} (${e.path})`).join(' / ')}. Ürüne gerçekten uyan BİRİNİ bunlardan seç.`;
+  }else if(hint){
+    hintLine = `\nTablo ipucu: veride eBay kategorisi "${hint.ebay}" bulundu → Etsy ID ${hint.entries[0].id} (${hint.entries[0].path}). Ürün gerçekten buna uyuyorsa bunu seç; uymuyorsa listeden en uygununu seç.`;
+  }
+  return {
+    det: false,
+    schema: `,\n  "category_id": 1234, "category_confidence": "high veya low"`,
+    block: `\nKATEGORİ KURALI: Vela yalnızca aşağıdaki listedeki Etsy kategorilerini kabul ediyor. "category_id" alanına ürüne EN UYGUN kategorinin ID numarasını yaz. SADECE listedeki ID'lerden birini kullan; liste dışı ID veya yol UYDURMA. Ürünün gerçek türüne bak (veri hangi dilde olursa olsun). Hiçbir kategori tam uymuyorsa en yakınını seç ve "category_confidence": "low" yaz; iyi uyuyorsa "high" yaz.${hintLine}\nKATEGORİ LİSTESİ (ID | yol):\n${CAT.promptBlock}\n`
+  };
+}
+
+/* AI'nın yazdığı yol listede yoksa en yakın tablo yoluna yaklaştır (kelime örtüşmesi) */
+function snapCategory(guess){
+  const tok = s => new Set(String(s).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>2));
+  const g = tok(guess);
+  if(!g.size) return null;
+  let best = null, bestScore = 0, tie = false;
+  CAT.etsyList.forEach(e=>{
+    const t = tok(e.path);
+    let inter = 0; g.forEach(w=>{ if(t.has(w)) inter++; });
+    const score = inter / (g.size + t.size - inter);
+    if(score > bestScore){ best = e; bestScore = score; tie = false; }
+    else if(score === bestScore && score > 0) tie = true;
+  });
+  return (best && bestScore >= 0.5 && !tie) ? best : null;
+}
+
+/* Metin üretiminden dönen sonucu tabloya bağla ve ürüne yaz */
+function resolveCategory(p, parsed, hint, ctx){
+  p.categoryConf = ''; p.categoryNote = '';
+  if(ctx.det){
+    const e = hint.entries[0];
+    p.category = e.path; p.categoryId = e.id; p.categorySource = 'ebay'; p.categoryConf = 'high';
+    return;
+  }
+  let entry = null, source = 'ai';
+  const idNum = Number(String(parsed.category_id == null ? '' : parsed.category_id).replace(/\D/g,''));
+  if(idNum && CAT.byId.has(idNum)) entry = CAT.byId.get(idNum);
+  if(!entry && parsed.category){
+    const guess = String(parsed.category).replace(/\s+/g,' ').trim();
+    entry = CAT.byPathLower.get(guess.toLowerCase()) || null;
+    if(!entry){ entry = snapCategory(guess); if(entry) source = 'ai-snap'; }
+  }
+  if(entry && hint && hint.entries.length > 1 && !hint.entries.includes(entry)){
+    entry = hint.entries[0]; source = 'ai-snap'; // AI tabloda çoklu eşleşmenin dışına çıktı → eBay eşleşmesine geri çek
+  }
+  if(entry){
+    p.category = entry.path; p.categoryId = entry.id; p.categorySource = source;
+    p.categoryConf = (parsed.category_confidence === 'low') ? 'low' : 'high';
+  }else{
+    p.category = parsed.category ? String(parsed.category) : '';
+    p.categoryId = null; p.categorySource = 'none'; p.categoryConf = 'low';
+  }
+}
+
+/* Kart/export için durum: ok | low | snap | invalid | empty */
+function categoryState(p){
+  const c = (p.category || '').trim();
+  if(!c) return 'empty';
+  if(!CAT.byPath.has(c)) return CAT.byPathLower.has(c.toLowerCase()) ? 'ok' : 'invalid';
+  if(p.categorySource === 'ai-snap') return 'snap';
+  if(p.categoryConf === 'low') return 'low';
+  return 'ok';
+}
+function categoryBadgeHtml(p){
+  const st = categoryState(p);
+  const src = {ebay:'eBay tablosundan', ai:'AI seçti', 'ai-snap':'AI seçti', manual:'elle seçildi', none:''}[p.categorySource || ''] || '';
+  const entry = CAT.byPath.get((p.category||'').trim()) || CAT.byPathLower.get((p.category||'').trim().toLowerCase());
+  if(st === 'empty') return p.status === 'done' ? `<div class="catbadge bad" data-catbadge>✕ Kategori boş — listeden seç</div>` : `<div class="catbadge" data-catbadge style="display:none;"></div>`;
+  if(st === 'invalid') return `<div class="catbadge bad" data-catbadge>✕ Bu yol Etsy tablonda yok — Vela'ya yüklenmeyebilir. Listeden seç.</div>`;
+  if(st === 'snap') return `<div class="catbadge warn" data-catbadge>⚠ AI'nın yazdığı yol listede yoktu, en yakın eşleşme seçildi — kontrol et</div>`;
+  if(st === 'low') return `<div class="catbadge warn" data-catbadge>⚠ AI emin değil, en yakın kategoriyi seçti — kontrol et</div>`;
+  return `<div class="catbadge ok" data-catbadge>✓ Etsy kategorisi${entry ? ' · ID '+entry.id : ''}${src ? ' · '+src : ''}</div>`;
+}
+/* Elle yazılan/seçilen yolu doğrula ve kanonik yazıma çevir */
+function applyManualCategory(p){
+  const c = (p.category || '').trim();
+  const e = CAT.byPath.get(c) || CAT.byPathLower.get(c.toLowerCase());
+  if(e){ p.category = e.path; p.categoryId = e.id; p.categorySource = 'manual'; p.categoryConf = 'high'; }
+  else { p.categoryId = null; p.categorySource = c ? 'none' : ''; p.categoryConf = ''; }
+}
+
+/* Kendi tablonu yükle */
+async function importCategoryFile(file){
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array'});
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+    if(!aoa.length) throw new Error('Dosya boş.');
+    const head = aoa[0].map(h=>String(h).toLowerCase());
+    let iE = head.findIndex(h=>/ebay/.test(h)), iI = head.findIndex(h=>/(^|\s)id($|\s)|etsy id/.test(h)), iP = head.findIndex(h=>/etsy.*(yol|path)|^path$|^yol$/.test(h));
+    if(iE < 0) iE = 0; if(iI < 0) iI = 1; if(iP < 0) iP = 2;
+    const rows = aoa.slice(1).map(r=>[String(r[iE]||'').trim(), r[iI], String(r[iP]||'').trim()]).filter(r=>r[2] && / > /.test(r[2]));
+    if(rows.length < 5) throw new Error('Geçerli satır bulunamadı. 3. kolonda "A > B > C" biçiminde Etsy yolları olmalı.');
+    localStorage.setItem(CATMAP_STORAGE, JSON.stringify(rows));
+    CAT.custom = true;
+    buildCategoryIndex(rows);
+    renderProducts();
+    alert(`Tablo yüklendi: ${rows.length} satır, ${CAT.etsyList.length} benzersiz Etsy kategorisi.`);
+  }catch(err){
+    alert('Tablo yüklenemedi: ' + err.message);
+  }
+}
+
 /* ---------- Gemini text calls ---------- */
 async function callGeminiText(promptText){
   const apiKey = $('geminiKey').value.trim();
@@ -810,13 +1046,34 @@ async function callGeminiText(promptText){
   return parts.filter(p=>p.text).map(p=>p.text).join('\n');
 }
 
-function buildSingleProductPrompt(rawRow, titlePrompt, descPrompt, tagPrompt){
+/* Section talimatı: ürüne özel yazıldıysa o, yoksa Ayarlar'daki genel talimat */
+function effectiveSectionPrompt(p){
+  const own = (p && p.sectionPrompt || '').trim();
+  return own || $('d_sectionprompt').value;
+}
+
+/* Bu işte şimdiye kadar üretilmiş section adları (tutarlılık için AI'ya hatırlatılır) */
+function usedSectionNames(excludeId){
+  const counts = {};
+  state.products.forEach(q=>{
+    if(q.id === excludeId) return;
+    const s = (q.section || '').trim();
+    if(s && q.status === 'done') counts[s] = (counts[s] || 0) + 1;
+  });
+  return Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).slice(0, 25);
+}
+
+function buildSingleProductPrompt(rawRow, titlePrompt, descPrompt, tagPrompt, sectionPrompt, usedSections, catCtx){
+  catCtx = catCtx || { schema:'', block:'' };
+  const usedLine = (usedSections && usedSections.length)
+    ? `\nBu işte şimdiye kadar kullanılan section adları: ${usedSections.join(' | ')}\nÜrün uygunsa bunlardan birini AYNEN yeniden kullan (yeni bölüm adı türetme); ama Section talimatı bir liste veriyorsa ya da başka bir kural koyuyorsa talimat HER ZAMAN önceliklidir.`
+    : '';
   return `Sana Etsy'den scrape edilmiş HAM ve KARIŞIK bir veri satırı vereceğim (JSON objesi). Kolon adları anlamsız veya CSS class adı olabilir, önemli değil — içeriğe bakarak anla.
 
 Bu satır bir ürünü temsil ediyor. AŞAĞIDAKİ ŞEMAYA UYAN TEK BİR JSON objesi üret:
 {
-  "title": "...", "description": "...", "category": "Ana Kategori > Alt Kategori > Alt Kategori",
-  "section": "kısa mağaza bölümü adı (1-3 kelime)",
+  "title": "...", "description": "..."${catCtx.schema},
+  "section": "mağaza bölümü adı — Section talimatına birebir uy (dil, uzunluk, izin verilen liste)",
   "tags": "virgülle ayrılmış EN FAZLA 13 etiket, HER BİRİ EN FAZLA 20 KARAKTER",
   "materials": "tahmini malzeme listesi, tahmin edemiyorsan boş string"
 }
@@ -824,8 +1081,9 @@ Bu satır bir ürünü temsil ediyor. AŞAĞIDAKİ ŞEMAYA UYAN TEK BİR JSON ob
 Başlık için özel talimat: ${titlePrompt}
 Açıklama için özel talimat: ${descPrompt}
 Tag'ler için özel talimat: ${tagPrompt}
+Section için özel talimat: ${sectionPrompt}${usedLine}
 (Tag format kuralları — en fazla 13 tag, her biri en fazla 20 karakter — HER ZAMAN geçerli, yukarıdaki talimat sadece içeriği yönlendirir.)
-
+${catCtx.block}
 SADECE geçerli bir JSON objesi döndür, başka hiçbir metin ekleme, dizi (array) DEĞİL tek obje döndür.
 
 GİRDİ:
@@ -860,12 +1118,18 @@ function guardNotRunning(){
 async function processProductText(p){
   p.status = 'processing';
   try{
-    const text = await callGeminiText(buildSingleProductPrompt(p.rawRow, p.titlePrompt, p.descPrompt, p.tagPrompt));
+    const catMode = $('d_catmode') ? $('d_catmode').value : 'table-first';
+    const hint = findEbayMatch(p.rawRow);
+    const catCtx = buildCategoryContext(hint, catMode);
+    const text = await callGeminiText(buildSingleProductPrompt(
+      p.rawRow, p.titlePrompt, p.descPrompt, p.tagPrompt,
+      effectiveSectionPrompt(p), usedSectionNames(p.id), catCtx
+    ));
     const clean = text.replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(clean);
     p.title = parsed.title || p.title;
     p.description = parsed.description || '';
-    p.category = parsed.category || '';
+    resolveCategory(p, parsed, hint, catCtx);
     p.section = parsed.section || '';
     p.tags = (parsed.tags || '').split(',').map(t=>t.trim()).filter(Boolean);
     p.materials = parsed.materials || '';
@@ -947,24 +1211,27 @@ async function regenerateText(p, card){
   const btn = card.querySelector('[data-regen-text]');
   btn.disabled = true; btn.textContent = '⏳ Üretiliyor…';
   try{
-    const prompt = `Ürün mevcut verisi: ${JSON.stringify({title:p.title, description:p.description, category:p.category, tags:p.tags.join(', ')})}
+    const used = usedSectionNames(p.id);
+    const prompt = `Ürün mevcut verisi: ${JSON.stringify({title:p.title, description:p.description, category:p.category, section:p.section, tags:p.tags.join(', ')})}
 Başlık talimatı: ${p.titlePrompt}
 Açıklama talimatı: ${p.descPrompt}
 Tag talimatı: ${p.tagPrompt}
+Section talimatı: ${effectiveSectionPrompt(p)}${used.length ? `\nBu işte şimdiye kadar kullanılan section adları: ${used.join(' | ')} — uygunsa bunlardan birini AYNEN yeniden kullan; Section talimatı başka bir şey söylüyorsa talimat önceliklidir.` : ''}
 (Tag format kuralları — en fazla 13 tag, her biri en fazla 20 karakter — HER ZAMAN geçerli.)
-Bu talimatlara göre YENİ title, description ve tags üret. Sadece şu JSON'u döndür: {"title":"...","description":"...","tags":"virgülle ayrılmış tag listesi"}`;
+Bu talimatlara göre YENİ title, description, section ve tags üret. Sadece şu JSON'u döndür: {"title":"...","description":"...","section":"...","tags":"virgülle ayrılmış tag listesi"}`;
     const text = await callGeminiText(prompt);
     const clean = text.replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(clean);
     p.title = parsed.title || p.title;
     p.description = parsed.description || p.description;
+    if(parsed.section) p.section = parsed.section;
     if(parsed.tags) p.tags = parsed.tags.split(',').map(t=>t.trim()).filter(Boolean);
     renderProducts();
     updateCurrentJob();
   }catch(err){
     alert('Yeniden üretim başarısız: '+err.message);
   }finally{
-    btn.disabled = false; btn.textContent = "↻ Başlık + açıklama + tag'leri yeniden üret";
+    btn.disabled = false; btn.textContent = "↻ Başlık + açıklama + tag + section'ı yeniden üret";
   }
 }
 
@@ -1023,10 +1290,29 @@ async function callGeminiEdit(base64Data, mimeType, promptText, apiKey){
   return `data:${mt};base64,${inline.data}`;
 }
 
+/* Vela medya linklerinin .jpg/.png ile bitmesini şart koşar. Foto, netlify.toml'daki /img/:id yönlendirmesiyle
+   (→ serve-image fonksiyonu) uzantılı bir yoldan sunulur. Yönlendirme siteye eklenmemişse linkler 404 verir;
+   bunu ilk fotoğraftan önce bir kez yoklayıp net bir hata gösteriyoruz. */
+let imgRouteOk = false;
+async function ensureImgRoute(){
+  if(imgRouteOk) return;
+  let body = '';
+  try{
+    const r = await fetch('/img/_probe.png', { cache: 'no-store' });
+    body = await r.text();
+  }catch(e){
+    throw new Error('Foto link yolu (/img/…) kontrol edilemedi: ' + e.message);
+  }
+  if(!/Görsel bulunamadı|id gerekli|^Hata:/.test(body)){
+    throw new Error('Sitede /img/ yönlendirmesi yok — GitHub\'daki netlify.toml ve serve-image.js dosyalarını güncelle, Netlify yeniden yayınlayınca tekrar dene.');
+  }
+  imgRouteOk = true;
+}
+
 async function hostEditedImage(resultDataUrl){
   // Upload happens server-side via a Netlify Function into Netlify Blobs —
-  // the photo ends up hosted on this site's own domain, served back by
-  // /.netlify/functions/serve-image.
+  // the photo ends up hosted on this site's own domain as /img/<id>.<png|jpg|webp>.
+  await ensureImgRoute();
   const base64Data = resultDataUrl.split(',')[1];
   const mimeMatch = resultDataUrl.match(/^data:([^;]+);/);
   const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
@@ -1039,6 +1325,12 @@ async function hostEditedImage(resultDataUrl){
   if(!res.ok){
     throw new Error(data.error || ('Yükleme fonksiyonu hata verdi: '+res.status));
   }
+  const ext = ({'image/png':'png','image/jpeg':'jpg','image/jpg':'jpg','image/webp':'webp'})[mimeType] || 'png';
+  try{
+    const u = new URL(data.url, location.href);
+    const id = u.searchParams.get('id');
+    if(id) return `${u.origin}/img/${id}.${ext}`;
+  }catch(e){ /* eski biçime düş */ }
   return data.url;
 }
 
@@ -1116,6 +1408,7 @@ function updateExportTab(){
   if(!n){
     $('exportDesc').textContent = 'Henüz çıkarılmış ürün yok.';
     $('exportPhotoSummary').textContent = '';
+    $('exportCatSummary').textContent = '';
     return;
   }
   const photoCount = parseInt($('d_photocount').value) || 0;
@@ -1144,6 +1437,16 @@ function updateExportTab(){
     $('exportPhotoSummary').innerHTML = `<span style="color:var(--success);">✓ ${withEditedPhoto}/${n} üründe en az bir düzenlenmiş fotoğraf var, ${hostedSlots} tanesi gerçek link'e sahip.</span>`;
   }
   $('exportGoPhotosBtn').style.display = (noPhotoEdit > 0 || editedNotHostedSlots > 0) ? 'inline-flex' : 'none';
+  const doneProducts = state.products.filter(p=>p.status==='done');
+  if(!doneProducts.length){
+    $('exportCatSummary').innerHTML = '';
+  }else{
+    const cBad = doneProducts.filter(p=>{ const st = categoryState(p); return st==='empty' || st==='invalid'; }).length;
+    const cUnsure = doneProducts.filter(p=>{ const st = categoryState(p); return st==='low' || st==='snap'; }).length;
+    if(cBad) $('exportCatSummary').innerHTML = `<span style="color:var(--danger);">✕ ${cBad} ürünün kategorisi boş ya da Etsy tablonda yok — "Ürünler" sekmesinde kırmızı işaretli kartlardan listeden seç.</span>`;
+    else if(cUnsure) $('exportCatSummary').innerHTML = `<span style="color:var(--warning);">⚠ Tüm kategoriler Etsy tablonda, ama ${cUnsure} üründe AI emin değil — kartlardaki sarı uyarıları kontrol et.</span>`;
+    else $('exportCatSummary').innerHTML = `<span style="color:var(--success);">✓ ${doneProducts.length}/${doneProducts.length} ürünün kategorisi Etsy tablonda.</span>`;
+  }
   const testBtn = document.getElementById('exportTestUploadLink');
   if(testBtn) testBtn.addEventListener('click', ()=>{ goTab('settings'); testUploadFunction(); });
 }
@@ -1175,7 +1478,7 @@ function renderProducts(){
           ${p.status==='error' ? `<div class="errtext">Hata: ${escapeHtml(p.errorMsg)} — <button class="btn btn-xs btn-soft" data-retry-row>↻ Bu ürünü tekrar dene</button></div>` : ''}
           <div class="field" style="margin-top:10px;"><label>Description</label><textarea data-field="description" placeholder="${descPlaceholder}" style="min-height:70px;">${escapeHtml(p.description)}</textarea></div>
           <div class="grid2">
-            <div class="field"><label>Category</label><input data-field="category" value="${escapeHtml(p.category)}"></div>
+            <div class="field"><label>Category (Etsy tablosu)</label><input data-field="category" list="catlist" value="${escapeHtml(p.category)}" placeholder="${p.status==='done'?'Yazmaya başla, listeden seç':'AI tablodan seçecek…'}">${categoryBadgeHtml(p)}</div>
             <div class="field"><label>Section</label><input data-field="section" value="${escapeHtml(p.section)}"></div>
             <div class="field"><label>Materials</label><input data-field="materials" value="${escapeHtml(p.materials)}"></div>
             <div class="field"><label>SKU</label><input data-field="sku" value="${escapeHtml(p.sku)}"></div>
@@ -1188,7 +1491,7 @@ function renderProducts(){
           </div>
 
           <div class="drawer">
-            <button class="drawer-toggle" data-drawer-toggle="${p.id}"><span>✦ AI prompt'ları (başlık, açıklama, tag, ${photoCount} fotoğraf)</span><span class="chev">▾</span></button>
+            <button class="drawer-toggle" data-drawer-toggle="${p.id}"><span>✦ AI prompt'ları (başlık, açıklama, tag, section, ${photoCount} fotoğraf)</span><span class="chev">▾</span></button>
             <div class="drawer-body ${openDrawers.has(p.id)?'open':''}" data-pid="${p.id}">
               <div class="promptfield">
                 <div class="plabel"><span>Başlık talimatı</span></div>
@@ -1202,7 +1505,11 @@ function renderProducts(){
                 <div class="plabel"><span>Tag talimatı</span></div>
                 <textarea data-field="tagPrompt">${escapeHtml(p.tagPrompt)}</textarea>
               </div>
-              <button class="btn btn-xs btn-soft" data-regen-text style="margin-bottom:14px;">↻ Başlık + açıklama + tag'leri yeniden üret</button>
+              <div class="promptfield">
+                <div class="plabel"><span>Section talimatı ${p.sectionPrompt ? '(bu ürüne özel)' : '(genel talimat kullanılıyor)'}</span></div>
+                <textarea data-field="sectionPrompt" placeholder="Boş bırakırsan Ayarlar'daki genel Section talimatı kullanılır.">${escapeHtml(p.sectionPrompt || '')}</textarea>
+              </div>
+              <button class="btn btn-xs btn-soft" data-regen-text style="margin-bottom:14px;">↻ Başlık + açıklama + tag + section'ı yeniden üret</button>
               ${Array.from({length:photoCount}).map((_,slotIdx)=>renderPhotoSlot(p, slotIdx)).join('')}
             </div>
           </div>
@@ -1212,6 +1519,15 @@ function renderProducts(){
     card.querySelectorAll('[data-field]').forEach(inp=>{
       inp.addEventListener('input', ()=>{ p[inp.dataset.field] = inp.value; });
       inp.addEventListener('change', ()=>{ updateCurrentJob(); });
+    });
+    // kategori: elle seçilen/yazılan yolu tabloya göre doğrula
+    const catInp = card.querySelector('[data-field="category"]');
+    if(catInp) catInp.addEventListener('change', ()=>{
+      applyManualCategory(p);
+      catInp.value = p.category;
+      const b = card.querySelector('[data-catbadge]');
+      if(b) b.outerHTML = categoryBadgeHtml(p);
+      updateCurrentJob();
     });
     // tags
     renderTags(card, p);
@@ -1509,6 +1825,8 @@ async function runFullPipeline(){
       try{
         await editSlot(p, s, null, null);
       }catch(err){
+        // editSlot already catches its own errors internally, but guard here too
+        // in case something unexpected (e.g. a render exception) escapes it.
         console.error('Beklenmeyen hata (foto):', err);
         p.photoStatus[s] = 'error';
         p.photoErrors[s] = err.message || 'Bilinmeyen hata';
@@ -1542,18 +1860,34 @@ $('fullStopBtn').addEventListener('click', ()=>{
 /* ---------- Export ---------- */
 $('exportGoPhotosBtn').addEventListener('click', ()=>{ goTab('products'); });
 
-$('exportBtn').addEventListener('click', ()=>{
-  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
-  const noPhotoEdit = state.products.filter(p=>photoEditedCount(p)===0).length;
-  if(noPhotoEdit > 0){
-    const total = state.products.length;
-    const proceed = confirm(
-      `${noPhotoEdit}/${total} üründe hiç foto düzenlemesi yapılmamış — bu ürünler için Photo 1'de sadece orijinal Etsy fotoğrafı olacak, diğer Photo kolonları boş kalacak.\n\n` +
-      `Yine de bu şekilde indirmek istiyor musun?\n\n` +
-      `"Tamam" — böyle indir\n"İptal" — önce "Ürünler" sekmesinden fotoğrafları düzenleyeyim`
-    );
-    if(!proceed) return;
-  }
+/* Vela şartı: medya linki .jpg/.png vb. ile bitmeli. Eski (uzantısız) serve-image linklerini /img/<id>.png biçimine çevirir. */
+const VALID_IMG_EXT = /\.(jpe?g|png|webp|gif)(\?.*)?$/i;
+function normalizePhotoUrl(u){
+  if(!u) return '';
+  const m = String(u).match(/^(https?:\/\/[^/]+)\/\.netlify\/functions\/serve-image\?id=([0-9a-f-]{36})$/i);
+  return m ? `${m[1]}/img/${m[2]}.png` : String(u);
+}
+/* Etsy kuralı: en fazla 13 tag, her biri en fazla 20 karakter (kelime sınırında kısaltır, tekrarları atar) */
+function cleanTags(tags){
+  const seen = new Set(), out = [];
+  (tags || []).forEach(t=>{
+    let s = String(t).replace(/\s+/g,' ').trim();
+    if(s.length > 20){
+      const cut = s.slice(0,20), sp = cut.lastIndexOf(' ');
+      s = (sp >= 10 ? cut.slice(0, sp) : cut).trim();
+    }
+    const k = s.toLowerCase();
+    if(s && !seen.has(k)){ seen.add(k); out.push(s); }
+  });
+  return out.slice(0,13);
+}
+function canonicalCategory(p){
+  const c = (p.category || '').trim();
+  const e = CAT.byPath.get(c) || CAT.byPathLower.get(c.toLowerCase());
+  return e ? e.path : c;
+}
+
+function buildVelaAoa(){
   const defaults = {
     whomade: $('d_whomade').value, whatisit: $('d_whatisit').value, whenmade: $('d_whenmade').value,
     renewal: $('d_renewal').value, producttype: $('d_producttype').value, prodpartner: $('d_prodpartner').value,
@@ -1561,13 +1895,13 @@ $('exportBtn').addEventListener('click', ()=>{
   };
   const aoa = [VELA_HEADERS];
   state.products.forEach(p=>{
-    const photo1 = p.finalUrls[0] || p.sourceImageUrl || '';
-    const photo2 = p.finalUrls[1] || '';
-    const photo3 = p.finalUrls[2] || '';
+    const photo1 = normalizePhotoUrl(p.finalUrls[0]) || p.sourceImageUrl || '';
+    const photo2 = normalizePhotoUrl(p.finalUrls[1]);
+    const photo3 = normalizePhotoUrl(p.finalUrls[2]);
     aoa.push([
-      p.title, p.description, p.category,
+      p.title, p.description, canonicalCategory(p),
       defaults.whomade, defaults.whatisit, defaults.whenmade, defaults.renewal, defaults.producttype,
-      p.tags.join(', '), p.materials, defaults.prodpartner, p.section,
+      cleanTags(p.tags).join(', '), p.materials, defaults.prodpartner, p.section,
       p.price || '', p.quantity || '', p.sku || '',
       '','','','','','','','','',
       defaults.shipping, '', '', '', '',
@@ -1576,7 +1910,58 @@ $('exportBtn').addEventListener('click', ()=>{
       '', '', '', '', '', ''
     ]);
   });
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  return aoa;
+}
+
+/* İndirmeden önce sorunları topla; tek bir onay penceresinde göster */
+function exportPreflight(){
+  const n = state.products.length;
+  const issues = [];
+  const notDone = state.products.filter(p=>p.status!=='done').length;
+  if(notDone) issues.push(`${notDone}/${n} ürünün metni (başlık/açıklama/tag/kategori) henüz üretilmemiş ya da hatalı.`);
+  const noPhotoEdit = state.products.filter(p=>photoEditedCount(p)===0).length;
+  if(noPhotoEdit) issues.push(`${noPhotoEdit}/${n} üründe hiç foto düzenlemesi yok — Photo 1'de orijinal Etsy fotoğrafı olacak, diğer Photo kolonları boş kalacak.`);
+  const catBad = state.products.filter(p=>{ const st = categoryState(p); return st==='empty' || st==='invalid'; }).length;
+  if(catBad) issues.push(`${catBad}/${n} ürünün kategorisi boş ya da Etsy tablonda yok — Vela bu satırlarda hata gösterebilir.`);
+  const catUnsure = state.products.filter(p=>{ const st = categoryState(p); return st==='low' || st==='snap'; }).length;
+  if(catUnsure) issues.push(`${catUnsure} ürünün kategorisinde AI emin değil (⚠) — indirmeden önce kontrol etmeni öneririm.`);
+  let badExt = 0;
+  state.products.forEach(p=>{ [0,1,2].forEach(s=>{ const u = normalizePhotoUrl(p.finalUrls[s]); if(u && !VALID_IMG_EXT.test(u)) badExt++; }); });
+  if(badExt) issues.push(`${badExt} foto linkinin sonunda .jpg/.png yok — Vela medya linklerini bu uzantılarla ister, bunları reddeder.`);
+  if(!issues.length) return true;
+  return confirm('Dikkat:\n\n' + issues.map(t=>'• '+t).join('\n') + '\n\nYine de indirmek istiyor musun?\n\n"Tamam" — böyle indir\n"İptal" — önce düzelteyim');
+}
+
+/* CSV (RFC 4180): virgül ayraç, gerektiğinde tırnak, satır sonu CRLF */
+function csvCell(v){
+  if(v == null) return '';
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+function aoaToCsv(aoa){ return aoa.map(r=>r.map(csvCell).join(',')).join('\r\n') + '\r\n'; }
+function downloadBlob(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+$('exportCsvBtn').addEventListener('click', ()=>{
+  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
+  if(!exportPreflight()) return;
+  const csv = aoaToCsv(buildVelaAoa());
+  const bom = $('csvBom').checked ? '﻿' : '';
+  downloadBlob(new Blob([bom + csv], {type:'text/csv;charset=utf-8'}), 'vela-export.csv');
+  setPill(4,'done');
+  updateCurrentJob();
+});
+
+$('exportBtn').addEventListener('click', ()=>{
+  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
+  if(!exportPreflight()) return;
+  const ws = XLSX.utils.aoa_to_sheet(buildVelaAoa());
   ws['!cols'] = VELA_HEADERS.map(()=>({wch:18}));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Vela Template');
@@ -1585,11 +1970,99 @@ $('exportBtn').addEventListener('click', ()=>{
   updateCurrentJob();
 });
 
+/* ZIP: düzenlenmiş fotoğraflar (bellekteki veri ya da hosted linkten) + vela-export.xlsx */
+function dataUrlToBytes(dataUrl){
+  const m = String(dataUrl).match(/^data:([^;,]+)[^,]*;base64,(.*)$/s);
+  if(!m) return null;
+  const bin = atob(m[2]);
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return { bytes, mime: m[1] };
+}
+function extFromMime(mime){
+  return ({'image/png':'png','image/jpeg':'jpg','image/jpg':'jpg','image/webp':'webp','image/gif':'gif'})[String(mime).toLowerCase()] || 'png';
+}
+function fileSlug(s){
+  return String(s||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40) || 'urun';
+}
+
+$('exportZipBtn').addEventListener('click', async ()=>{
+  if(!state.products.length){ alert('Önce "Ürünler" sekmesinden AI ile ürün çıkar.'); return; }
+  if(typeof JSZip === 'undefined'){ alert('ZIP kütüphanesi yüklenemedi (internet bağlantısını kontrol edip sayfayı yenile).'); return; }
+  if(!exportPreflight()) return;
+  const btn = $('exportZipBtn');
+  const label = btn.textContent;
+  btn.disabled = true;
+  try{
+    const zip = new JSZip();
+    const folder = zip.folder('photos');
+    let added = 0, skipped = 0, done = 0;
+    const total = state.products.reduce((n,p)=> n + [0,1,2].filter(s=>p.editedImages[s] || p.finalUrls[s]).length, 0);
+    for(let i=0;i<state.products.length;i++){
+      const p = state.products[i];
+      for(let s=0;s<3;s++){
+        if(!(p.editedImages[s] || p.finalUrls[s])) continue;
+        btn.textContent = `⏳ Fotoğraflar toplanıyor… ${done}/${total}`;
+        let bytes = null, mime = 'image/png';
+        try{
+          if(p.editedImages[s]){
+            const d = dataUrlToBytes(p.editedImages[s]);
+            if(d){ bytes = d.bytes; mime = d.mime; }
+          }
+          if(!bytes && p.finalUrls[s]){
+            const r = await fetch(normalizePhotoUrl(p.finalUrls[s]));
+            if(r.ok){ bytes = new Uint8Array(await r.arrayBuffer()); mime = (r.headers.get('content-type') || 'image/png').split(';')[0]; }
+          }
+        }catch(e){ bytes = null; }
+        done++;
+        if(bytes){
+          const name = `${String(i+1).padStart(3,'0')}_${fileSlug(p.title)}_foto${s+1}.${extFromMime(mime)}`;
+          folder.file(name, bytes);
+          added++;
+        }else{
+          skipped++;
+        }
+      }
+    }
+    btn.textContent = '⏳ xlsx hazırlanıyor…';
+    const ws = XLSX.utils.aoa_to_sheet(buildVelaAoa());
+    ws['!cols'] = VELA_HEADERS.map(()=>({wch:18}));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Vela Template');
+    zip.file('vela-export.xlsx', XLSX.write(wb, {bookType:'xlsx', type:'array'}));
+    btn.textContent = '⏳ ZIP oluşturuluyor…';
+    // JPG/PNG zaten sıkışık: STORE ile hızlı ve bellek dostu
+    const blob = await zip.generateAsync({type:'blob', compression:'STORE'});
+    downloadBlob(blob, 'vela-export.zip');
+    setPill(4,'done');
+    updateCurrentJob();
+    if(skipped) alert(`ZIP indirildi: ${added} fotoğraf eklendi, ${skipped} fotoğraf alınamadı (bellekte yok ve linkten de indirilemedi).`);
+  }catch(err){
+    alert('ZIP oluşturulamadı: ' + err.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+});
+
 ['d_price','d_qty','d_skuprefix'].forEach(id=>{
   $(id).addEventListener('change', ()=>{ applyDefaultsToProducts(); renderProducts(); updateCurrentJob(); });
 });
 
 /* ---------- Init ---------- */
+$('catmapUploadBtn').addEventListener('click', ()=> $('catmapFile').click());
+$('catmapFile').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0];
+  if(f) importCategoryFile(f);
+  e.target.value = '';
+});
+$('catmapResetBtn').addEventListener('click', ()=>{
+  try{ localStorage.removeItem(CATMAP_STORAGE); }catch(err){ /* ignore */ }
+  loadCategoryMap();
+  renderProducts();
+});
+loadCategoryMap();
 renderHistoryList();
 syncPhotoPromptFieldsVisibility();
 </script>

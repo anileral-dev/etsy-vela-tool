@@ -4,3 +4,10 @@
 
 [functions]
   node_bundler = "esbuild"
+
+# Foto linkleri .png/.jpg ile bitsin (Vela şartı): /img/<id>.png -> serve-image fonksiyonu
+[[redirects]]
+  from = "/img/:id"
+  to = "/.netlify/functions/serve-image?id=:id"
+  status = 200
+  force = true
