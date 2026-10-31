@@ -418,16 +418,17 @@ td{color:var(--text-2);}
 
     <div class="panel">
       <h2>Fotoğraf stili</h2>
-      <p class="desc">Varsayılan olarak her şeyi AI yapar: ürüne bakıp ferah, aydınlık bir lifestyle sahnesi kurgular (açık yüzey, doğal ışık, 1-4 sade obje). Aynı ürünün tüm fotoğrafları aynı sahneyi kullanır; Foto 1 ana çekim, Foto 2 yakın çekim, Foto 3 uzak/geniş çekim ve farklı açıdır. İstersen sabit bir stüdyo fonu, kendi arka plan görselini ya da kendi prompt'unu seçebilirsin. Kalite kuralları her fotoğrafa otomatik eklenir: eklenen yazı/logo/filigran yok, ürün aynen korunur, sadece hafif rötuş.</p>
+      <p class="desc">Varsayılan olarak her şeyi AI yapar: ürüne bakıp evde kolayca kurulabilecek <b>sade bir zemin ve fon</b> seçer (beyaz/krem karton, düz duvar, açık renk ahşap masa, keten kumaş gibi). Fotoğrafa <b>hiç obje eklenmez</b>. Aynı ürünün tüm fotoğrafları aynı zemin ve fonu kullanır; Foto 1 ana çekim, diğer fotoğraflar, seçtiğin fotoğraf sayısına göre (en fazla 10) birbirinden farklı açı ve duruşlarla çekilir; ürün her zaman tam görünür, aşırı yakın çekim yapılmaz. İstersen sabit bir stüdyo fonu, kendi arka plan görselini ya da kendi prompt'unu seçebilirsin. Kalite kuralları her fotoğrafa otomatik eklenir: eklenen yazı/logo/filigran yok, ürün aynen korunur, sadece hafif rötuş.</p>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
         <div class="field">
           <label>Ürün başına fotoğraf sayısı</label>
-          <select id="d_photocount"><option value="1">1 fotoğraf</option><option value="2" selected>2 fotoğraf</option><option value="3">3 fotoğraf</option></select>
+          <select id="d_photocount"><option value="1">1 fotoğraf</option><option value="2" selected>2 fotoğraf</option><option value="3">3 fotoğraf</option><option value="4">4 fotoğraf</option><option value="5">5 fotoğraf</option><option value="6">6 fotoğraf</option><option value="7">7 fotoğraf</option><option value="8">8 fotoğraf</option><option value="9">9 fotoğraf</option><option value="10">10 fotoğraf</option></select>
+          <span class="hint">En fazla 10 (Etsy ve Vela sınırı). Her fotoğraf ayrı bir Gemini çağrısıdır: sayı arttıkça süre ve kullanım artar. AI açıları sayıya göre dağıtır; hiçbiri birbirinin tekrarı olmaz.</span>
         </div>
         <div class="field">
           <label>Arka plan / zemin</label>
           <select id="d_scene">
-            <option value="lifestyle">Ferah lifestyle — AI sahne kurgular (önerilen)</option>
+            <option value="lifestyle">Sade ev fonu — AI basit zemin ve fon seçer (önerilen)</option>
             <option value="studio-white">Temiz beyaz stüdyo (sabit fon)</option>
             <option value="custom-image">Kendi arka plan görselim (yükle)</option>
             <option value="custom-text">Kendi prompt'um (yazıyla tarif)</option>
@@ -442,7 +443,7 @@ td{color:var(--text-2);}
         </div>
       </div>
 
-      <p id="sceneLifestyleNote" class="hint" style="display:none;font-size:12px;color:var(--text-2);margin-top:12px;max-width:680px;">AI her ürün için ürüne uygun bir sahne kurgusu yazar (yüzey, objeler, dizilim) ve o ürünün tüm fotoğraflarında aynısını kullanır. Kurguyu "Ürünler" sekmesinde ürün kartındaki AI bölümünde görüp düzenleyebilirsin. Tüm mağazalarda aynı "ferah, aydınlık" görünüm sabit kalır; objeler ürüne göre değişir.</p>
+      <p id="sceneLifestyleNote" class="hint" style="display:none;font-size:12px;color:var(--text-2);margin-top:12px;max-width:680px;">AI her ürün için tek bir sade zemin ve tek bir düz fon seçer (ürünün rengiyle iyi kontrast yapan, evde karton, kumaş veya masayla kurabileceğin türden) ve o ürünün tüm fotoğraflarında aynısını kullanır. Obje, süs, bitki eklenmez. Seçimi "Ürünler" sekmesinde ürün kartındaki AI bölümünde görüp değiştirebilirsin.</p>
       <div id="sceneBackdropPreview" style="display:none;align-items:center;gap:12px;margin-top:14px;">
         <img id="sceneBackdropImg" alt="arka plan" style="width:88px;height:88px;object-fit:cover;border-radius:8px;border:1px solid #E4E7EC;">
         <span class="hint" style="font-size:11.5px;color:var(--text-3);max-width:420px;">Gemini'ye ürün fotoğrafıyla birlikte verilecek arka plan. Ürün bu zeminin üstüne yerleştirilir.</span>
@@ -472,13 +473,41 @@ td{color:var(--text-2);}
         </div>
         <div class="field" data-photoprompt-field="2" style="margin-bottom:12px;">
           <label>Fotoğraf 3 — açı / duruş (tüm ürünlere uygulanır)</label>
-          <textarea id="d_photoprompt_2" style="min-height:56px;" placeholder="örn. Yakın çekim, malzeme ve detay"></textarea>
+          <textarea id="d_photoprompt_2" style="min-height:56px;" placeholder="örn. Tam yukarıdan, düz yatırılmış (flat lay)"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="3" style="margin-bottom:12px;">
+          <label>Fotoğraf 4 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_3" style="min-height:56px;" placeholder="örn. Farklı bir yönden ya da yükseklikten, ürün tam görünür"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="4" style="margin-bottom:12px;">
+          <label>Fotoğraf 5 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_4" style="min-height:56px;" placeholder="örn. Farklı bir yönden ya da yükseklikten, ürün tam görünür"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="5" style="margin-bottom:12px;">
+          <label>Fotoğraf 6 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_5" style="min-height:56px;" placeholder="örn. Farklı bir yönden ya da yükseklikten, ürün tam görünür"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="6" style="margin-bottom:12px;">
+          <label>Fotoğraf 7 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_6" style="min-height:56px;" placeholder="örn. Farklı bir yönden ya da yükseklikten, ürün tam görünür"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="7" style="margin-bottom:12px;">
+          <label>Fotoğraf 8 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_7" style="min-height:56px;" placeholder="örn. Farklı bir yönden ya da yükseklikten, ürün tam görünür"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="8" style="margin-bottom:12px;">
+          <label>Fotoğraf 9 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_8" style="min-height:56px;" placeholder="örn. Farklı bir yönden ya da yükseklikten, ürün tam görünür"></textarea>
+        </div>
+        <div class="field" data-photoprompt-field="9" style="margin-bottom:12px;">
+          <label>Fotoğraf 10 — açı / duruş (tüm ürünlere uygulanır)</label>
+          <textarea id="d_photoprompt_9" style="min-height:56px;" placeholder="örn. Farklı bir yönden ya da yükseklikten, ürün tam görünür"></textarea>
         </div>
       </div>
 
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:12.5px;color:var(--text-2);cursor:pointer;max-width:640px;">
         <input type="checkbox" id="d_ref1" checked style="margin-top:2px;">
-        <span>Foto 2 ve 3'ü üretirken Foto 1'i de referans ver <b>(önerilen)</b> — aynı ürünün fotoğrafları aynı yüzeyde, ışıkta ve tonda olur. Foto 2/3 sırayla, Foto 1'den sonra üretilir.</span>
+        <span>Foto 2 ve sonrakileri üretirken Foto 1'i de referans ver <b>(önerilen)</b> — aynı ürünün fotoğrafları aynı yüzeyde, ışıkta ve tonda olur. Fotoğraflar sırayla, Foto 1'den sonra üretilir.</span>
       </label>
     </div>
 
@@ -582,7 +611,18 @@ td{color:var(--text-2);}
 <script>
 const VELA_HEADERS = ["Title","Description","Category","Who made it?","What is it?","When was it made?","Renewal options","Product type","Tags","Materials","Production partners","Section","Price","Quantity","SKU","Variation 1","V1 Option","Variation 2","V2 Option","Var Price","Var Quantity","Var SKU","Var Visibility","Var Photo","Shipping profile","Weight","Length","Width","Height","Return policy","Photo 1","Photo 2","Photo 3","Photo 4","Photo 5","Photo 6","Photo 7","Photo 8","Photo 9","Photo 10","Video 1","Digital file 1","Digital file 2","Digital file 3","Digital file 4","Digital file 5"];
 
+const MAX_PHOTOS = 10; // Etsy ve Vela: ürün başına en fazla 10 fotoğraf
 let state = { headers: [], rows: [], products: [] };
+/* Eski kayıtlarda foto dizileri 3 uzunluğunda olabilir; hepsini MAX_PHOTOS'a tamamlar */
+function padPhotoArrays(p){
+  const fix = (a, fill)=>{ const out = Array.isArray(a) ? a.slice() : []; while(out.length < MAX_PHOTOS) out.push(fill); return out; };
+  p.photoPrompts = fix(p.photoPrompts, '');
+  p.editedImages = fix(p.editedImages, null);
+  p.finalUrls = fix(p.finalUrls, '');
+  p.photoStatus = fix(p.photoStatus, null);
+  p.photoErrors = fix(p.photoErrors, '');
+  return p;
+}
 const $ = (id) => document.getElementById(id);
 
 /* ---------- Job history (localStorage) ---------- */
@@ -607,7 +647,7 @@ function saveJobs(jobs){
         ...j,
         products: (j.products||[]).map(p=>({
           ...p,
-          editedImages: [null,null,null],
+          editedImages: (p.editedImages||[]).map(()=>null),
           // a slot can only stay 'done' in storage if it still has a real hosted link;
           // otherwise mark it back to pending so a reload doesn't show a false "done" state
           photoStatus: (p.photoStatus||[]).map((st, i)=> (st==='done' && !p.finalUrls?.[i]) ? null : st)
@@ -668,7 +708,7 @@ function openJob(jobId){
   if(!job) return;
   state.headers = job.headers || [];
   state.rows = job.rows || [];
-  state.products = job.products || [];
+  state.products = (job.products || []).map(padPhotoArrays);
   currentJobId = job.id;
   $('filepillWrap').innerHTML = `<div class="filepill">✓ ${escapeHtml(job.filename)} — ${state.rows.length} satır (geçmişten açıldı)</div>`;
   if(state.headers.length) renderRawPreview();
@@ -833,11 +873,11 @@ function buildProductPlaceholders(filename){
       sourceEtsyLink: findEtsyLink(row),
       titlePrompt: titlePrompt, descPrompt: descPrompt, tagPrompt: tagPrompt,
       sectionPrompt: '', // boş = Ayarlar'daki genel Section talimatını kullan; kartta düzenlenirse sadece bu ürüne özel olur
-      photoPrompts: Array.from({length:3}, ()=> ''),
-      editedImages: Array.from({length:3}, ()=> null),
-      finalUrls: Array.from({length:3}, ()=> ''),
-      photoStatus: Array.from({length:3}, ()=> null), // null|'loading'|'done'|'error'
-      photoErrors: Array.from({length:3}, ()=> ''),
+      photoPrompts: Array.from({length:MAX_PHOTOS}, ()=> ''),
+      editedImages: Array.from({length:MAX_PHOTOS}, ()=> null),
+      finalUrls: Array.from({length:MAX_PHOTOS}, ()=> ''),
+      photoStatus: Array.from({length:MAX_PHOTOS}, ()=> null), // null|'loading'|'done'|'error'
+      photoErrors: Array.from({length:MAX_PHOTOS}, ()=> ''),
       price:'', quantity:'', sku:''
     };
   });
@@ -1316,15 +1356,23 @@ function fileToBase64(file){
   });
 }
 /* ---------- Foto stili: sabit arka plan + açılar + kalite kuralları ---------- */
-const PHOTO_QUALITY_RULES = 'Square 1:1 composition. The product is the clear hero: sharp focus, fully recognizable and well lit (close-up shots excepted), photorealistic marketplace-ready quality with soft natural shadows. ABSOLUTELY NO added text, letters, logos, brand names, labels, captions, watermarks or borders anywhere in the image; the product\'s own printing, engraving, patterns and design must stay exactly as they are in the original photo. Props must be plain and unbranded (no printed text, logos or labels on them) and must never hide or overpower the product. Do NOT change the product\'s shape, proportions, color, material or design details. LIGHT RETOUCH ONLY: if the product looks rough, wrinkled, dusty, scuffed or unevenly lit in the original, you may subtly clean it up (smooth wrinkles, remove dust or tiny blemishes, even out the lighting) but never alter its real texture, never hide genuine defects a buyer should know about, and never make it look like a different material or quality.';
-const LIFESTYLE_LOOK = 'Bright, airy, cheerful lifestyle product photography: light neutral surfaces (cream, off-white, light stone, pale wood or linen), soft natural window light, gentle low-contrast shadows, a warm and inviting feel, clean and uncluttered styling like top-selling Etsy listings. The same airy look in every photo.';
+const PHOTO_QUALITY_RULES = 'Square 1:1 composition. The product is the clear hero: sharp focus, fully recognizable and well lit, photorealistic marketplace-ready quality with soft natural shadows. ABSOLUTELY NO added text, letters, logos, brand names, labels, captions, watermarks or borders anywhere in the image; the product\'s own printing, engraving, patterns and design must stay exactly as they are in the original photo. Do NOT add any props, decorations, plants, flowers, fabrics, packaging or other objects to the scene: only the product itself, on a plain surface in front of a plain backdrop (if the product is a set, show only the pieces that belong to it). NEVER zoom in tightly or make a macro close-up: the WHOLE product must always be completely in frame with comfortable empty space around it, shot from a normal product-photo distance. Do NOT change the product\'s shape, proportions, color, material or design details. LIGHT RETOUCH ONLY: if the product looks rough, wrinkled, dusty, scuffed or unevenly lit in the original, you may subtly clean it up (smooth wrinkles, remove dust or tiny blemishes, even out the lighting) but never alter its real texture, never hide genuine defects a buyer should know about, and never make it look like a different material or quality.';
+const LIFESTYLE_LOOK = 'Simple, clean, bright product photography on an easy home-made setup: ONE plain surface and ONE plain backdrop only, such as white or cream poster board, a plain light wall, a light wood tabletop or cutting board, a plain linen or cotton cloth, light grey concrete-look or marble-look paper, or a single-color seamless paper sweep. Soft natural window light, gentle soft shadows, airy and uncluttered. NO props, NO decorations, NO plants or flowers, NO extra objects: only the product on the plain surface in front of the plain backdrop. The same simple look in every photo.';
 const PHOTO_SCENES = {
   'studio-white': { text:'Clean seamless pure-white studio backdrop; a very light grey floor fades softly into the wall; soft diffused studio lighting from the upper left.', wall:['#FFFFFF','#F4F4F5'], floor:['#EFEFF0','#FAFAFA'] }
 };
-const AUTO_ANGLES = [
-  'MAIN LISTING PHOTO (medium distance): the product as the clear hero of the styled scene, shown from its most attractive natural angle and completely visible.',
-  'CLOSE-UP: a tight close-up of the same product that highlights its material, texture and craftsmanship, with the softly blurred background and surface of the same scene.',
-  'WIDE SHOT FROM A DIFFERENT ANGLE: a farther, wider view of the same scene from a different camera angle (for example top-down or a high three-quarter view) that shows the product together with more of its surroundings. Only show sides of the product that are plausible from the original photo.'
+/* Otomatik açılar: ürün başına seçilen fotoğraf sayısı kadar, her biri öncekilerden farklı. Hepsi orta/biraz uzak mesafe, ürün tam kadrajda. */
+const ANGLE_POOL = [
+  { label:'front main view', text:'MAIN LISTING PHOTO (medium distance): the product as the clear hero, fully visible, shown from its most attractive natural angle (usually front or slightly three-quarter) and centered on the plain surface.' },
+  { label:'three-quarter view from slightly above', text:'THREE-QUARTER VIEW: camera slightly above the product and rotated about 35-45 degrees to one side, same medium distance, the whole product in frame.' },
+  { label:'top-down flat lay', text:'TOP-DOWN VIEW (flat lay): camera directly above, looking straight down, the whole product centered with comfortable plain surface around it.' },
+  { label:'low side view', text:'LOW SIDE VIEW: camera low, close to surface level, looking at the whole product from the side.' },
+  { label:'three-quarter view from the opposite side', text:'OPPOSITE THREE-QUARTER VIEW: like a three-quarter view but from the opposite side of the product, camera slightly above.' },
+  { label:'farther straight-on view', text:'FARTHER FRONT VIEW: camera a little farther away, straight on, the product somewhat smaller in the frame with generous plain surface around it.' },
+  { label:'steep high angle', text:'HIGH ANGLE: camera high above at roughly 60 degrees looking down toward the whole product.' },
+  { label:'side-on pose', text:'SIDE-ON POSE: the product turned about 90 degrees on the surface and seen from slightly above.' },
+  { label:'diagonal flat lay', text:'DIAGONAL FLAT LAY: seen from above with the product rotated about 45 degrees in the frame.' },
+  { label:'far low three-quarter view', text:'FAR LOW THREE-QUARTER VIEW: camera farther away and low, three-quarter view, with plenty of plain surface around the product.' }
 ];
 const SCENE_IMG_KEY = 'etsy_vela_scene_image_v1';
 let sceneCustomImage = '';
@@ -1386,15 +1434,17 @@ function resolveScene(){
   return { text: t, backdrop: null };
 }
 /* Bu fotoğrafın açısı: ürüne özel yazıldıysa o; yoksa "kendim yazacağım" modundaki genel; yoksa otomatik */
-function effectiveAngle(p, s){
+function angleInfo(p, s){
   const own = ((p.photoPrompts && p.photoPrompts[s]) || '').trim();
-  if(own) return own;
+  if(own) return { text: own, label: own.slice(0, 80) };
   if($('d_angles').value === 'custom'){
     const g = ($('d_photoprompt_'+s) ? $('d_photoprompt_'+s).value : '').trim();
-    if(g) return g;
+    if(g) return { text: g, label: g.slice(0, 80) };
   }
-  return AUTO_ANGLES[Math.min(s, AUTO_ANGLES.length-1)];
+  const a = ANGLE_POOL[Math.min(s, ANGLE_POOL.length-1)];
+  return { text: a.text, label: a.label };
 }
+function effectiveAngle(p, s){ return angleInfo(p, s).text; }
 /* Foto 1 sonucu (bellekte ya da host edilmiş linkten) — Foto 2/3 için referans */
 async function getAnchorImage(p){
   try{
@@ -1414,22 +1464,21 @@ async function getAnchorImage(p){
 async function getSceneBrief(p, base64Data, mimeType){
   if((p.sceneBrief || '').trim()) return p.sceneBrief.trim();
   const label = (p.title || guessRawTitle(p.rawRow) || '').trim();
-  const prompt = `You are an art director for top-selling Etsy product photography. Look at the product photo${label ? ` (product: "${label}"${p.category ? ', category: '+p.category : ''})` : ''} and design ONE scene brief that shows this exact product off beautifully in a bright, airy, cheerful lifestyle setting.
-Return ONLY a JSON object: {"surface":"...","props":"...","arrangement":"...","light":"..."}
-Rules: bright airy neutral palette (cream, off-white, light stone, pale wood, linen). "props": 1-4 plain, unbranded, text-free props that support how the product is used, gifted or displayed, or an empty string if none fit; they must never overpower the product. "arrangement": how the product (and, only if it makes sense, 2-3 copies or variants of it) is placed. No text, logos or brand names on anything. Do not invent features the product does not have. Each value in English, under 25 words.`;
+  const prompt = `You are a photographer for top-selling Etsy listings. Look at the product photo${label ? ` (product: "${label}"${p.category ? ', category: '+p.category : ''})` : ''} and choose ONE very simple surface and ONE simple backdrop to photograph this exact product on.
+Return ONLY a JSON object: {"surface":"...","backdrop":"...","light":"..."}
+Rules: the setup must be something anyone can recreate at home with a sheet of poster board or paper, a plain wall, a table, a cutting board or a piece of plain fabric. Bright, airy, neutral colors (white, cream, light grey, pale wood, linen). Pick the combination that gives the product the best contrast and makes its real color look right (for example a white product on light grey or pale wood, a dark product on white or cream). NO props, decorations, plants, flowers or extra objects of any kind, and no patterns, text, logos or brand names. Each value in English, under 20 words.`;
   try{
     const text = await callGeminiText(prompt, { data: base64Data, mime: mimeType });
     const o = JSON.parse(text.replace(/```json|```/g,'').trim());
     const parts = [];
     if(o.surface) parts.push('Surface: ' + o.surface);
-    if(o.props) parts.push('Props: ' + o.props);
-    if(o.arrangement) parts.push('Arrangement: ' + o.arrangement);
+    if(o.backdrop) parts.push('Backdrop: ' + o.backdrop);
     if(o.light) parts.push('Light: ' + o.light);
     if(parts.length){ p.sceneBrief = parts.join(' | '); return p.sceneBrief; }
   }catch(e){ /* kurgu yazılamazsa genel talimatla devam edilir */ }
   return '';
 }
-function buildPhotoPrompt(p, slotIdx, scene, hasAnchor){
+function buildPhotoPrompt(p, slotIdx, scene, hasAnchor, total){
   const label = (p.title || guessRawTitle(p.rawRow) || '').trim();
   let n = 1; const idx = { product: 1 };
   if(scene.backdrop) idx.backdrop = ++n;
@@ -1439,12 +1488,18 @@ function buildPhotoPrompt(p, slotIdx, scene, hasAnchor){
   L.push(`Image ${idx.product} is the ORIGINAL product photo.${label ? ` The product is "${label}"${p.category ? ' (category: '+p.category+')' : ''}.` : ''} Reproduce this exact product: same shape, proportions, colors, materials, patterns, text and details. Never redesign it, never add or remove parts, never turn it into a different product, and never put it in a scene that is unrelated or misleading for what the product is.`);
   if(scene.backdrop) L.push(`Image ${idx.backdrop} is the BACKDROP (background wall and floor). Place the product on exactly this backdrop and keep the same background color, floor surface and lighting. Do not restyle or change the backdrop.`);
   if(scene.lifestyle){
-    L.push(`SCENE (the SAME scene in every photo of this product): ${scene.text} ${scene.brief ? 'Scene brief for this product: ' + scene.brief + '.' : 'Choose a fitting light surface and 1-3 simple, unbranded, text-free props that support how the product is used or gifted.'}`);
+    L.push(`SCENE (the SAME scene in every photo of this product): ${scene.text} ${scene.brief ? 'Surface and backdrop for this product: ' + scene.brief + '.' : 'Choose ONE plain, bright surface and ONE plain backdrop that are easy to recreate at home (for example white poster board, a light wood table, a plain linen cloth) with good contrast to the product. No props.'}`);
   }else if(scene.text){
     L.push(`SCENE (identical in every photo of every listing): ${scene.text}`);
   }
   if(hasAnchor) L.push(`Image ${idx.anchor} is photo #1 of this same listing. Match its background, floor, lighting, color tone and shadow style exactly; only the camera angle / product pose changes, as described below.`);
-  L.push(`ANGLE FOR THIS PHOTO: ${effectiveAngle(p, slotIdx)}`);
+  total = Math.max(total || 1, slotIdx + 1);
+  if(total > 1){
+    const others = [];
+    for(let k=0;k<total;k++){ if(k !== slotIdx) others.push(`photo ${k+1}: ${angleInfo(p, k).label}`); }
+    L.push(`THIS IS PHOTO ${slotIdx+1} OF ${total} in the same listing. The other photos use these viewpoints (${others.join('; ')}). This photo must show the product from a clearly different viewpoint than all of them, so a buyer sees the product from many sides without repetition.`);
+  }
+  L.push(`ANGLE FOR THIS PHOTO: ${angleInfo(p, slotIdx).text}\nIf this exact viewpoint makes no sense for this particular product (for example a straight top-down view of a tall standing item), use the nearest natural alternative viewpoint that is still clearly different from the other photos. Only show sides of the product that are plausible from the original photo.`);
   L.push(`QUALITY RULES (always apply): ${PHOTO_QUALITY_RULES}`);
   return L.join('\n\n');
 }
@@ -1569,7 +1624,7 @@ async function editSlot(p, slotIdx, card, manualFile){
     const extraImages = [];
     if(scene.backdrop) extraImages.push(scene.backdrop);
     if(anchor) extraImages.push(anchor);
-    const promptText = buildPhotoPrompt(p, slotIdx, scene, !!anchor);
+    const promptText = buildPhotoPrompt(p, slotIdx, scene, !!anchor, parseInt($('d_photocount').value) || 1);
     const resultDataUrl = await callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages);
     p.editedImages[slotIdx] = resultDataUrl;
     p.photoStatus[slotIdx] = 'done';
@@ -1705,8 +1760,8 @@ function renderProducts(){
                 <textarea data-field="sectionPrompt" placeholder="Boş bırakırsan Ayarlar'daki genel Section talimatı kullanılır.">${escapeHtml(p.sectionPrompt || '')}</textarea>
               </div>
               <div class="promptfield">
-                <div class="plabel"><span>Sahne kurgusu (fotoğraflar için — AI yazar, istersen düzenle)</span></div>
-                <textarea data-field="sceneBrief" placeholder="Boş bırakırsan ilk fotoğraf üretilirken AI bu ürüne uygun bir sahne kurgusu yazar (İngilizce). Kendin yazarsan tüm fotoğraflarda o kullanılır.">${escapeHtml(p.sceneBrief||'')}</textarea>
+                <div class="plabel"><span>Zemin ve fon (fotoğraflar için — AI seçer, istersen düzenle)</span></div>
+                <textarea data-field="sceneBrief" placeholder="Boş bırakırsan ilk fotoğraf üretilirken AI bu ürüne uygun sade bir zemin ve fon seçer (İngilizce yazılır, örn. Surface: light oak tabletop | Backdrop: plain white wall). Kendin yazarsan tüm fotoğraflarda o kullanılır.">${escapeHtml(p.sceneBrief||'')}</textarea>
               </div>
               <button class="btn btn-xs btn-soft" data-regen-text style="margin-bottom:14px;">↻ Başlık + açıklama + tag + section'ı yeniden üret</button>
               ${Array.from({length:photoCount}).map((_,slotIdx)=>renderPhotoSlot(p, slotIdx)).join('')}
@@ -1905,7 +1960,7 @@ function renderTags(card, p){
 /* ---------- Photo count change re-renders slots ---------- */
 function syncPhotoPromptFieldsVisibility(){
   const count = parseInt($('d_photocount').value);
-  for(let i=0;i<3;i++){
+  for(let i=0;i<MAX_PHOTOS;i++){
     const wrap = document.querySelector(`[data-photoprompt-field="${i}"]`);
     if(wrap) wrap.style.display = i < count ? 'block' : 'none';
   }
@@ -2089,9 +2144,8 @@ function buildVelaAoa(){
   };
   const aoa = [VELA_HEADERS];
   state.products.forEach(p=>{
-    const photo1 = normalizePhotoUrl(p.finalUrls[0]) || p.sourceImageUrl || '';
-    const photo2 = normalizePhotoUrl(p.finalUrls[1]);
-    const photo3 = normalizePhotoUrl(p.finalUrls[2]);
+    const photos = Array.from({length:MAX_PHOTOS}, (_, i)=> normalizePhotoUrl((p.finalUrls||[])[i]));
+    photos[0] = photos[0] || p.sourceImageUrl || '';
     aoa.push([
       p.title, p.description, canonicalCategory(p),
       defaults.whomade, defaults.whatisit, defaults.whenmade, defaults.renewal, defaults.producttype,
@@ -2100,7 +2154,7 @@ function buildVelaAoa(){
       '','','','','','','','','',
       defaults.shipping, '', '', '', '',
       defaults.returnpolicy,
-      photo1, photo2, photo3, '', '', '', '', '', '', '',
+      ...photos,
       '', '', '', '', '', ''
     ]);
   });
@@ -2120,7 +2174,7 @@ function exportPreflight(){
   const catUnsure = state.products.filter(p=>{ const st = categoryState(p); return st==='low' || st==='snap'; }).length;
   if(catUnsure) issues.push(`${catUnsure} ürünün kategorisinde AI emin değil (⚠) — indirmeden önce kontrol etmeni öneririm.`);
   let badExt = 0;
-  state.products.forEach(p=>{ [0,1,2].forEach(s=>{ const u = normalizePhotoUrl(p.finalUrls[s]); if(u && !VALID_IMG_EXT.test(u)) badExt++; }); });
+  state.products.forEach(p=>{ Array.from({length:MAX_PHOTOS},(_,i)=>i).forEach(s=>{ const u = normalizePhotoUrl(p.finalUrls[s]); if(u && !VALID_IMG_EXT.test(u)) badExt++; }); });
   if(badExt) issues.push(`${badExt} foto linkinin sonunda .jpg/.png yok — Vela medya linklerini bu uzantılarla ister, bunları reddeder.`);
   if(!issues.length) return true;
   return confirm('Dikkat:\n\n' + issues.map(t=>'• '+t).join('\n') + '\n\nYine de indirmek istiyor musun?\n\n"Tamam" — böyle indir\n"İptal" — önce düzelteyim');
@@ -2192,10 +2246,10 @@ $('exportZipBtn').addEventListener('click', async ()=>{
     const zip = new JSZip();
     const folder = zip.folder('photos');
     let added = 0, skipped = 0, done = 0;
-    const total = state.products.reduce((n,p)=> n + [0,1,2].filter(s=>p.editedImages[s] || p.finalUrls[s]).length, 0);
+    const total = state.products.reduce((n,p)=> n + Array.from({length:MAX_PHOTOS},(_,i)=>i).filter(s=>p.editedImages[s] || p.finalUrls[s]).length, 0);
     for(let i=0;i<state.products.length;i++){
       const p = state.products[i];
-      for(let s=0;s<3;s++){
+      for(let s=0;s<MAX_PHOTOS;s++){
         if(!(p.editedImages[s] || p.finalUrls[s])) continue;
         btn.textContent = `⏳ Fotoğraflar toplanıyor… ${done}/${total}`;
         let bytes = null, mime = 'image/png';
