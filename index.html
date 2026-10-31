@@ -428,17 +428,30 @@ td{color:var(--text-2);}
         <div class="field">
           <label>Görsel modeli (fiyat farkı var)</label>
           <select id="d_imgmodel">
-            <option value="gemini-3.1-flash-image" selected>gemini-3.1-flash-image — şu anki (≈ $0.067 / foto)</option>
-            <option value="gemini-nano-banana-2.1">gemini-nano-banana-2.1 — yarı fiyat (≈ $0.034 / foto), daha yeni</option>
-            <option value="gemini-3.1-flash-lite-image">gemini-3.1-flash-lite-image — yarı fiyat (≈ $0.034 / foto), en hızlı</option>
+            <option value="gemini-3.1-flash-image" selected>3.1-flash-image — şu anki (≈ $0.067)</option>
+            <option value="gemini-nano-banana-2.1">nano-banana-2.1 — yarı fiyat (≈ $0.034)</option>
+            <option value="gemini-3.1-flash-lite-image">3.1-flash-lite — yarı fiyat, en hızlı</option>
           </select>
           <span class="hint" id="imgCostHint"></span>
         </div>
         <div class="field">
+          <label>Hız — aynı anda kaç işlem</label>
+          <select id="d_concurrency">
+            <option value="1">1 — sırayla (en yavaş, en güvenli)</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4 (önerilen)</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="8">8 — çok hızlı (hata riski)</option>
+          </select>
+          <span class="hint">Ürünler ve bir ürünün fotoğrafları aynı anda işlenir. Foto 1 her zaman önce çıkar, diğerleri onu referans alıp birlikte üretilir. Gemini "çok fazla istek" (429) derse program otomatik bekleyip yeniden dener; çok hata görürsen sayıyı düşür. Maliyet değişmez, sadece süre kısalır.</span>
+        </div>
+        <div class="field">
           <label>Zemin + arka fon</label>
           <select id="d_scene">
-            <option value="custom-text" selected>Ana prompt'umu ben yazacağım (önerilen)</option>
-            <option value="lifestyle">AI seçsin — sade ev zemini ve fonu</option>
+            <option value="custom-text" selected>Ana prompt'u ben yazarım (önerilen)</option>
+            <option value="lifestyle">AI seçsin (sade ev fonu)</option>
             <option value="studio-white">Temiz beyaz stüdyo (sabit fon)</option>
             <option value="custom-image">Kendi arka plan görselim (yükle)</option>
           </select>
@@ -516,7 +529,7 @@ td{color:var(--text-2);}
 
       <label style="display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:12.5px;color:var(--text-2);cursor:pointer;max-width:640px;">
         <input type="checkbox" id="d_ref1" checked style="margin-top:2px;">
-        <span>Foto 2 ve sonrakileri üretirken Foto 1'i de referans ver <b>(önerilen)</b> — aynı zemin, fon ve ışık korunur, sadece açı ve duruş değişir. Fotoğraflar sırayla, Foto 1'den sonra üretilir; Foto 1 hazır değilse diğerleri atlanır.</span>
+        <span>Foto 2 ve sonrakileri üretirken Foto 1'i de referans ver <b>(önerilen)</b> — aynı zemin, fon ve ışık korunur, sadece açı ve duruş değişir. Ürünün görünümü her zaman senin verdiğin orijinal fotoğraftan alınır; Foto 1 sadece zemin, fon ve ışık için kullanılır. Fotoğraflar sırayla, Foto 1'den sonra üretilir; Foto 1 hazır değilse diğerleri atlanır.</span>
       </label>
     </div>
 
@@ -646,23 +659,22 @@ function loadJobs(){
   }catch(e){ return []; }
 }
 function saveJobs(jobs){
+  // Büyük base64 görselleri (linki zaten host edilmiş olanları) kaydetmeye gerek yok: hem hızlanır hem kota dolmaz.
+  const slim = (all)=> jobs.map(j=>({
+    ...j,
+    products: (j.products||[]).map(p=>({
+      ...p,
+      editedImages: (p.editedImages||[]).map((img, i)=> (all || (p.finalUrls && p.finalUrls[i])) ? null : img),
+      // linki olmayan bir foto, görseli de saklanmıyorsa "hazır" görünmesin
+      photoStatus: all ? (p.photoStatus||[]).map((st, i)=> (st==='done' && !p.finalUrls?.[i]) ? null : st) : p.photoStatus
+    }))
+  }));
   try{
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(jobs));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(slim(false)));
     return true;
   }catch(e){
-    // quota exceeded — strip heaviest fields (base64 edited image previews) and retry once
     try{
-      const trimmed = jobs.map(j=>({
-        ...j,
-        products: (j.products||[]).map(p=>({
-          ...p,
-          editedImages: (p.editedImages||[]).map(()=>null),
-          // a slot can only stay 'done' in storage if it still has a real hosted link;
-          // otherwise mark it back to pending so a reload doesn't show a false "done" state
-          photoStatus: (p.photoStatus||[]).map((st, i)=> (st==='done' && !p.finalUrls?.[i]) ? null : st)
-        }))
-      }));
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(slim(true)));
       return true;
     }catch(e2){
       console.error('Geçmiş kaydedilemedi (depolama dolu olabilir):', e2);
@@ -693,7 +705,10 @@ function createJob(filename){
   currentJobId = job.id;
   renderHistoryList();
 }
-function updateCurrentJob(){
+/* Kayıt, her fotoğraftan sonra değil, kısa bir bekleme sonrası tek seferde yapılır (hız için) */
+let jobSaveTimer = null;
+function flushCurrentJob(){
+  if(jobSaveTimer){ clearTimeout(jobSaveTimer); jobSaveTimer = null; }
   if(!currentJobId) return;
   const jobs = loadJobs();
   const idx = jobs.findIndex(j=>j.id===currentJobId);
@@ -705,6 +720,12 @@ function updateCurrentJob(){
   saveJobs(jobs);
   renderHistoryList();
 }
+function updateCurrentJob(){
+  if(!currentJobId) return;
+  if(jobSaveTimer) clearTimeout(jobSaveTimer);
+  jobSaveTimer = setTimeout(flushCurrentJob, 1500);
+}
+window.addEventListener('beforeunload', ()=>{ try{ flushCurrentJob(); }catch(e){} });
 function deleteJob(jobId){
   const jobs = loadJobs().filter(j=>j.id!==jobId);
   saveJobs(jobs);
@@ -910,12 +931,16 @@ function renderRawPreview(){
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* ---------- Image URL / link helpers ---------- */
+/* Programın kendi yüklediği (host ettiği) fotoğraf linkleri: bunlar daha önce ÜRETİLMİŞ fotoğraflardır, asla kaynak/referans seçilmez */
+const OWN_PHOTO_RE = /\/img\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpe?g|webp)|serve-image\?id=/i;
 function findImageUrl(rowObj){
-  const vals = Object.values(rowObj).filter(v=>typeof v === 'string');
-  const candidates = vals.filter(v=>/\.(jpg|jpeg|png|webp)(\?|$)/i.test(v) && /^https?:\/\//i.test(v));
-  if(candidates.length===0) return null;
-  const etsy = candidates.find(c=>c.includes('etsystatic'));
-  return etsy || candidates[0];
+  const cands = Object.entries(rowObj).filter(([k, v])=> typeof v === 'string' && /^https?:\/\//i.test(v) && /\.(jpg|jpeg|png|webp)(\?|$)/i.test(v) && !OWN_PHOTO_RE.test(v));
+  if(!cands.length) return null;
+  // eBay / Etsy resim sunucusu ve "image/photo/foto…" adlı kolon öncelikli; eşitlikte ilk bulunan
+  const score = ([k, v])=> (/ebayimg\.com|etsystatic\.com/i.test(v) ? 2 : 0) + (/image|img|photo|picture|pic|thumb|görsel|gorsel|foto|resim/i.test(k) ? 1 : 0);
+  let best = cands[0], bs = score(best);
+  cands.forEach(c=>{ const sc = score(c); if(sc > bs){ best = c; bs = sc; } });
+  return best[1];
 }
 function upscaleEtsyImage(url){
   if(!url) return url;
@@ -1132,7 +1157,7 @@ async function importCategoryFile(file){
 async function callGeminiText(promptText, image){
   const apiKey = $('geminiKey').value.trim();
   if(!apiKey) throw new Error('Gemini API key girilmemiş — "Ayarlar & AI" sekmesinden ekle.');
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const res = await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ contents:[{ parts:[{ text: promptText }].concat(image ? [{ inline_data:{ mime_type:image.mime, data:image.data } }] : []) }] })
@@ -1193,6 +1218,47 @@ ${JSON.stringify(rawRow)}`;
 /* ---------- Shared run/stop state (used by text analysis, photo editing, and the combined runner) ---------- */
 let runStopRequested = false;
 let isRunning = false;
+
+/* ---------- Hız: aynı anda birden fazla işlem ---------- */
+let GEMINI_RETRY_BASE_MS = 2000;
+function concurrencyLimit(){ const n = parseInt($('d_concurrency').value); return n >= 1 ? n : 1; }
+/* Aynı anda en fazla N Gemini görsel çağrısı (N = ayar) */
+const gate = {
+  active: 0, queue: [],
+  acquire(){ return new Promise(res=>{ this.queue.push(res); this.pump(); }); },
+  release(){ this.active--; this.pump(); },
+  pump(){ while(this.active < concurrencyLimit() && this.queue.length){ this.active++; this.queue.shift()(); } }
+};
+/* items üzerinde en fazla `limit` işi aynı anda yürütür; durdurulunca yeni iş başlatmaz */
+async function runPool(items, limit, worker){
+  let next = 0;
+  const lane = async ()=>{
+    while(next < items.length && !runStopRequested){ const item = items[next++]; await worker(item); }
+  };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, lane));
+}
+/* 429 / 5xx / ağ hatasında üstel bekleyip 4 kez dener (hız sınırına takılınca iş yarıda kalmasın) */
+async function geminiFetch(url, init){
+  const tries = 4;
+  for(let a = 0; a < tries; a++){
+    try{
+      const res = await fetch(url, init);
+      if(res.ok || ![429,500,502,503,504].includes(res.status) || a === tries-1) return res;
+    }catch(e){
+      if(a === tries-1) throw e;
+    }
+    await new Promise(r=> setTimeout(r, GEMINI_RETRY_BASE_MS * Math.pow(2, a) * (0.75 + Math.random()*0.5)));
+  }
+}
+/* Ürünün kaynak fotoğrafı bir kez indirilir; aynı ürünün tüm fotoğrafları aynı kopyayı kullanır */
+const srcImageCache = new Map();
+function getSourceImage(p){
+  const key = p.id + '|' + p.sourceImageUrl;
+  if(!srcImageCache.has(key)){
+    srcImageCache.set(key, urlToBase64(p.sourceImageUrl).catch(e=>{ srcImageCache.delete(key); throw e; }));
+  }
+  return srcImageCache.get(key);
+}
 
 function setGlobalRun(active, label){
   isRunning = active;
@@ -1259,21 +1325,22 @@ async function analyzeAll(){
   setGlobalRun(true, 'Metin üretimi başlıyor…');
   setPill(2,'active');
   const total = state.products.length;
-  let doneN = 0;
-  for(let i=0;i<state.products.length;i++){
-    if(runStopRequested) break;
-    const p = state.products[i];
-    if(p.status === 'done'){ doneN++; continue; } // resume: skip already-completed rows
-    renderProducts();
-    const label = `${doneN+1}/${total} ürün işleniyor (metin)…`;
+  let doneN = state.products.filter(p=>p.status === 'done').length; // devam: bitmişleri atla
+  const todo = state.products.filter(p=>p.status !== 'done');
+  renderProducts();
+  await runPool(todo, concurrencyLimit(), async (p)=>{
+    const label = `${doneN}/${total} ürün tamamlandı (metin)…`;
     $('analyzeStatus').textContent = label;
     setGlobalRun(true, label);
-    await processProductText(p);
+    const job = processProductText(p); // durumu hemen 'processing' yapar
+    renderProducts();
+    await job;
     doneN++;
     updateProgress();
     renderProducts();
     updateCurrentJob();
-  }
+  });
+  flushCurrentJob();
   setRunning(false);
   setGlobalRun(false);
   const doneCount = state.products.filter(p=>p.status==='done').length;
@@ -1494,7 +1561,7 @@ function buildPhotoPrompt(p, slotIdx, scene, hasAnchor, total){
   if(hasAnchor) idx.anchor = ++n;
   const L = [];
   L.push('You are a professional e-commerce product photographer preparing a marketplace listing photo.');
-  L.push(`Image ${idx.product} is the ORIGINAL product photo.${label ? ` The product is "${label}"${p.category ? ' (category: '+p.category+')' : ''}.` : ''} Reproduce this exact product: same shape, proportions, colors, materials, patterns, text and details. Never redesign it, never add or remove parts, never turn it into a different product, and never put it in a scene that is unrelated or misleading for what the product is.`);
+  L.push(`Image ${idx.product} is the ORIGINAL product photo given by the shop owner. It is the ONLY reference for how the product looks.${label ? ` The product is "${label}"${p.category ? ' (category: '+p.category+')' : ''}.` : ''} Reproduce this exact product: same shape, proportions, colors, materials, patterns, text and details. Never redesign it, never add or remove parts, never turn it into a different product, and never put it in a scene that is unrelated or misleading for what the product is.`);
   if(scene.backdrop) L.push(`Image ${idx.backdrop} is the BACKDROP (background wall and floor). Place the product on exactly this backdrop and keep the same background color, floor surface and lighting. Do not restyle or change the backdrop.`);
   if(scene.lifestyle){
     L.push(`SCENE (the SAME scene in every photo of this product): ${scene.text} ${scene.brief ? 'Surface and backdrop for this product: ' + scene.brief + '.' : 'Choose ONE plain, bright surface and ONE plain backdrop that are easy to recreate at home (for example white poster board, a light wood table, a plain linen cloth) with good contrast to the product. No props.'}`);
@@ -1503,7 +1570,7 @@ function buildPhotoPrompt(p, slotIdx, scene, hasAnchor, total){
   }else if(scene.text){
     L.push(`SCENE (identical in every photo of every listing): ${scene.text}`);
   }
-  if(hasAnchor) L.push(`Image ${idx.anchor} is photo #1 of this same listing. Match its background, floor, lighting, color tone and shadow style exactly; only the camera angle / product pose changes, as described below.`);
+  if(hasAnchor) L.push(`Image ${idx.anchor} is photo #1 of this same listing (generated earlier). Match its background, floor, lighting, color tone and shadow style exactly; only the camera angle / product pose changes, as described below. Use it ONLY for the scene: never copy the product's look from it. If it differs from Image ${idx.product} in any detail of the product, Image ${idx.product} (the shop owner's original photo) is always right.`);
   total = Math.max(total || 1, slotIdx + 1);
   if(total > 1){
     const others = [];
@@ -1531,7 +1598,7 @@ function validatePhotoStyle(){
 }
 
 async function callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages){
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent($('d_imgmodel').value || 'gemini-3.1-flash-image')}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const res = await geminiFetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent($('d_imgmodel').value || 'gemini-3.1-flash-image')}:generateContent?key=${encodeURIComponent(apiKey)}`, {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({
       contents:[{ parts:[ {text: promptText}, {inline_data:{mime_type:mimeType, data:base64Data}} ].concat((extraImages||[]).map(e=>({inline_data:{mime_type:e.mime, data:e.data}}))) }],
@@ -1560,7 +1627,13 @@ async function callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraIma
    (→ serve-image fonksiyonu) uzantılı bir yoldan sunulur. Yönlendirme siteye eklenmemişse linkler 404 verir;
    bunu ilk fotoğraftan önce bir kez yoklayıp net bir hata gösteriyoruz. */
 let imgRouteOk = false;
+let imgRouteProbe = null;
 async function ensureImgRoute(){
+  if(imgRouteOk) return;
+  if(!imgRouteProbe) imgRouteProbe = probeImgRoute().finally(()=>{ imgRouteProbe = null; });
+  await imgRouteProbe;
+}
+async function probeImgRoute(){
   if(imgRouteOk) return;
   let body = '';
   try{
@@ -1636,21 +1709,31 @@ async function editSlot(p, slotIdx, card, manualFile){
       base64Data = r.dataUrl.split(',')[1]; mimeType = r.mimeType;
     }else{
       if(!p.sourceImageUrl) throw new Error('Kaynak görsel bulunamadı, elle yükle.');
-      const r = await urlToBase64(p.sourceImageUrl);
+      const r = await getSourceImage(p);
       base64Data = r.dataUrl.split(',')[1]; mimeType = r.mimeType;
     }
     const scene = resolveScene();
-    if(scene.lifestyle) scene.brief = await getSceneBrief(p, base64Data, mimeType);
-    const anchor = (slotIdx > 0 && $('d_ref1').checked) ? await getAnchorImage(p) : null;
-    const extraImages = [];
-    if(scene.backdrop) extraImages.push(scene.backdrop);
-    if(anchor) extraImages.push(anchor);
-    const promptText = buildPhotoPrompt(p, slotIdx, scene, !!anchor, parseInt($('d_photocount').value) || 1);
-    const resultDataUrl = await callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages);
+    let resultDataUrl = null;
+    await gate.acquire(); // aynı anda en fazla N Gemini çağrısı
+    try{
+      if(isRunning && runStopRequested){
+        p.photoStatus[slotIdx] = null; // durduruldu: sıradaki iş başlamadan vazgeç
+      }else{
+        if(scene.lifestyle) scene.brief = await getSceneBrief(p, base64Data, mimeType);
+        const anchor = (slotIdx > 0 && $('d_ref1').checked) ? await getAnchorImage(p) : null;
+        const extraImages = [];
+        if(scene.backdrop) extraImages.push(scene.backdrop);
+        if(anchor) extraImages.push(anchor);
+        const promptText = buildPhotoPrompt(p, slotIdx, scene, !!anchor, parseInt($('d_photocount').value) || 1);
+        resultDataUrl = await callGeminiEdit(base64Data, mimeType, promptText, apiKey, extraImages);
+      }
+    }finally{
+      gate.release(); // yükleme (host) sırasında bir sonraki Gemini çağrısı başlayabilsin
+    }
+    if(!resultDataUrl){ renderProducts(); return; }
     p.editedImages[slotIdx] = resultDataUrl;
     p.photoStatus[slotIdx] = 'done';
     // auto-host the edited image so it becomes a real link for Vela's Photo columns
-    // (works with zero setup via catbox.moe; uses ImgBB instead if that key is filled in)
     try{
       const hostedUrl = await hostEditedImage(resultDataUrl);
       if(hostedUrl) p.finalUrls[slotIdx] = hostedUrl;
@@ -1889,7 +1972,7 @@ function renderPhotoStrip(p, photoCount){
     : `<span class="ph2">Görsel<br>bulunamadı</span>`;
   let html = `<div class="photostrip">
     <div class="photostrip-item">
-      <div class="photostrip-label orig">Orijinal</div>
+      <div class="photostrip-label orig" title="Gemini'ye ürünün tek referansı olarak bu fotoğraf gönderilir">Orijinal (referans)</div>
       <div class="photostrip-img${p.sourceImageUrl?'':' empty'}">${origImg}</div>
     </div>`;
   for(let s=0;s<photoCount;s++){
@@ -1983,7 +2066,7 @@ function syncPhotoPromptFieldsVisibility(){
   const count = parseInt($('d_photocount').value);
   for(let i=0;i<MAX_PHOTOS;i++){
     const wrap = document.querySelector(`[data-photoprompt-field="${i}"]`);
-    if(wrap) wrap.style.display = i < count ? 'block' : 'none';
+    if(wrap) wrap.style.display = i < count ? 'flex' : 'none';
   }
 }
 $('d_photocount').addEventListener('change', ()=>{ renderProducts(); syncPhotoPromptFieldsVisibility(); });
@@ -1994,34 +2077,47 @@ function setPhotoRunning(isRunning){
   $('photoStopBtn').style.display = isRunning ? 'inline-flex' : 'none';
   $('photoProgressbarWrap').style.display = isRunning ? 'block' : 'none';
 }
+/* Bir ürünün bekleyen fotoğrafları: önce Foto 1 (referans), sonra kalanlar AYNI ANDA (Gemini çağrıları kapıdan geçer) */
+async function runProductPhotos(p, slots, step){
+  if(slots.includes(0)) await step(p, 0);
+  await Promise.all(slots.filter(s=>s !== 0).map(s=> step(p, s)));
+}
 async function runAllPhotoEdits(){
   if(!guardNotRunning()) return;
   const photoCount = parseInt($('d_photocount').value);
   if(!validatePhotoStyle()) return;
   renderProducts();
 
-  const tasks = [];
+  const groups = [];
+  let total = 0;
   state.products.forEach(p=>{
-    for(let s=0;s<photoCount;s++){
-      if(!isPhotoSlotDone(p, s)) tasks.push({p, s});
-    }
+    const slots = [];
+    for(let s=0;s<photoCount;s++){ if(!isPhotoSlotDone(p, s)) slots.push(s); }
+    if(slots.length){ groups.push({p, slots}); total += slots.length; }
   });
-  if(!tasks.length){ alert('Düzenlenecek foto kalmamış — hepsi zaten "Hazır" durumda.'); return; }
+  if(!total){ alert('Düzenlenecek foto kalmamış — hepsi zaten "Hazır" durumda.'); return; }
 
   runStopRequested = false;
   setPhotoRunning(true);
   setGlobalRun(true, 'Foto düzenleme başlıyor…');
-  const total = tasks.length;
   let doneCount = 0;
-  for(const {p, s} of tasks){
-    if(runStopRequested) break;
-    const label = `${doneCount+1}/${total} fotoğraf işleniyor…`;
+  const step = async (p, s)=>{
+    if(runStopRequested) return;
+    try{
+      if(missingAnchor(p, s)) renderProducts(); else await editSlot(p, s, null, null);
+    }catch(err){
+      console.error('Beklenmeyen hata (foto):', err);
+      p.photoStatus[s] = 'error'; p.photoErrors[s] = err.message || 'Bilinmeyen hata'; renderProducts();
+    }
+    doneCount++;
+    const label = `${doneCount}/${total} fotoğraf tamamlandı…`;
     $('photoEditStatus').textContent = label;
     setGlobalRun(true, label);
-    if(missingAnchor(p, s)) renderProducts(); else await editSlot(p, s, null, null);
-    doneCount++;
     $('photoProgressbar').style.width = Math.round((doneCount/total)*100)+'%';
-  }
+  };
+  await runPool(groups, concurrencyLimit(), ({p, slots})=> runProductPhotos(p, slots, step));
+  srcImageCache.clear();
+  flushCurrentJob();
   setPhotoRunning(false);
   setGlobalRun(false);
   $('photoEditStatus').textContent = runStopRequested
@@ -2051,7 +2147,7 @@ async function runFullPipeline(){
 
   const photoCount = parseInt($('d_photocount').value);
 
-  // total work = 1 "text" step per not-yet-done product + 1 step per not-yet-done photo slot
+  // toplam iş = bitmemiş ürün başına 1 "metin" adımı + bitmemiş her foto için 1 adım
   let grandTotal = 0;
   state.products.forEach(p=>{
     if(p.status !== 'done') grandTotal++;
@@ -2060,20 +2156,34 @@ async function runFullPipeline(){
   let doneSteps = 0;
   let productsFullyDone = 0;
   const totalProducts = state.products.length;
+  const tick = (what)=>{
+    const label = `${doneSteps}/${grandTotal} adım tamamlandı (${what})…`;
+    $('fullRunStatus').textContent = label;
+    setGlobalRun(true, label);
+    $('fullProgressbar').style.width = grandTotal ? Math.round((doneSteps/grandTotal)*100)+'%' : '0%';
+  };
 
-  productLoop:
-  for(const p of state.products){
-    if(runStopRequested) break;
-
-    // step 1 for this product: text (title/description/category/tags)
-    if(p.status !== 'done'){
+  const photoStep = async (p, s)=>{
+    if(runStopRequested) return;
+    try{
+      if(missingAnchor(p, s)) renderProducts(); else await editSlot(p, s, null, null);
+    }catch(err){
+      // editSlot kendi hatalarını yakalar; beklenmedik bir şey sızarsa burada da yakalıyoruz
+      console.error('Beklenmeyen hata (foto):', err);
+      p.photoStatus[s] = 'error';
+      p.photoErrors[s] = err.message || 'Bilinmeyen hata';
       renderProducts();
-      const label = `Ürün ${productsFullyDone+1}/${totalProducts} — metin üretiliyor…`;
-      $('fullRunStatus').textContent = label;
-      setGlobalRun(true, label);
-      try{
-        await processProductText(p);
-      }catch(err){
+    }
+    doneSteps++;
+    tick('foto');
+  };
+
+  // Ürünler aynı anda (ayardaki sayı kadar) işlenir: her ürün için önce metin, sonra Foto 1, sonra kalan fotolar
+  await runPool(state.products.slice(), concurrencyLimit(), async (p)=>{
+    if(p.status !== 'done'){
+      const job = processProductText(p); // durumu hemen 'processing' yapar
+      renderProducts();
+      try{ await job; }catch(err){
         console.error('Beklenmeyen hata (metin):', err);
         p.status = 'error';
         p.errorMsg = err.message || 'Bilinmeyen hata';
@@ -2081,34 +2191,17 @@ async function runFullPipeline(){
       doneSteps++;
       renderProducts();
       updateCurrentJob();
-      $('fullProgressbar').style.width = grandTotal ? Math.round((doneSteps/grandTotal)*100)+'%' : '0%';
+      tick('metin');
     }
-    if(runStopRequested) break;
-
-    // step 2 for this product: every photo slot, one by one
-    for(let s=0;s<photoCount;s++){
-      if(runStopRequested) break productLoop;
-      if(isPhotoSlotDone(p, s)) continue;
-      const label = `Ürün ${productsFullyDone+1}/${totalProducts} — fotoğraf ${s+1}/${photoCount} düzenleniyor…`;
-      $('fullRunStatus').textContent = label;
-      setGlobalRun(true, label);
-      try{
-        if(missingAnchor(p, s)) renderProducts(); else await editSlot(p, s, null, null);
-      }catch(err){
-        // editSlot already catches its own errors internally, but guard here too
-        // in case something unexpected (e.g. a render exception) escapes it.
-        console.error('Beklenmeyen hata (foto):', err);
-        p.photoStatus[s] = 'error';
-        p.photoErrors[s] = err.message || 'Bilinmeyen hata';
-        renderProducts();
-      }
-      doneSteps++;
-      $('fullProgressbar').style.width = grandTotal ? Math.round((doneSteps/grandTotal)*100)+'%' : '0%';
-    }
-
-    productsFullyDone++;
+    if(runStopRequested) return;
+    const slots = [];
+    for(let s=0;s<photoCount;s++){ if(!isPhotoSlotDone(p, s)) slots.push(s); }
+    await runProductPhotos(p, slots, photoStep);
+    if(!runStopRequested) productsFullyDone++;
     updateCurrentJob();
-  }
+  });
+  srcImageCache.clear();
+  flushCurrentJob();
 
   setFullRunning(false);
   setGlobalRun(false);
@@ -2362,7 +2455,7 @@ function syncPhotoStyleUi(){
   const v = $('d_scene').value;
   $('sceneLifestyleNote').style.display = v === 'lifestyle' ? 'block' : 'none';
   $('sceneCustomImageBox').style.display = v === 'custom-image' ? 'block' : 'none';
-  $('sceneCustomTextBox').style.display = v === 'custom-text' ? 'block' : 'none';
+  $('sceneCustomTextBox').style.display = v === 'custom-text' ? 'flex' : 'none';
   let src = '';
   if(PHOTO_SCENES[v]) src = makeBackdropDataUrl(v);
   else if(v === 'custom-image') src = sceneCustomImage;
