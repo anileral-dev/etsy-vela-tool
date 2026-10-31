@@ -1298,12 +1298,16 @@ async function ensureImgRoute(){
   if(imgRouteOk) return;
   let body = '';
   try{
-    const r = await fetch('/img/_probe.png', { cache: 'no-store' });
+    // geçerli biçimde ama var olmayan bir kimlikle yokla: doğru kurulumda fonksiyon "Görsel bulunamadı" der
+    const r = await fetch('/img/00000000-0000-0000-0000-000000000000.png', { cache: 'no-store' });
     body = await r.text();
   }catch(e){
     throw new Error('Foto link yolu (/img/…) kontrol edilemedi: ' + e.message);
   }
-  if(!/Görsel bulunamadı|id gerekli|^Hata:/.test(body)){
+  if(/id gerekli/.test(body)){
+    throw new Error('/img/ yönlendirmesi çalışıyor ama kimlik fonksiyona ulaşmıyor — netlify.toml ve serve-image.js dosyalarının son sürümünü GitHub\'a yükle.');
+  }
+  if(!/Görsel bulunamadı|^Hata:/.test(body)){
     throw new Error('Sitede /img/ yönlendirmesi yok — GitHub\'daki netlify.toml ve serve-image.js dosyalarını güncelle, Netlify yeniden yayınlayınca tekrar dene.');
   }
   imgRouteOk = true;
