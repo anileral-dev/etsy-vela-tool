@@ -2,12 +2,19 @@ const { connectLambda, getStore } = require('@netlify/blobs');
 
 exports.handler = async (event) => {
   connectLambda(event);
+  // Kimliği birkaç yerden dene: ?id=..., sonra orijinal URL / yol içindeki UUID
+  // (/img/<uuid>.jpg yönlendirmesi kimliği query olarak iletmeyebilir, bu yüzden yoldan da okuyoruz)
+  const UUID_RE = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
   let id = event.queryStringParameters && event.queryStringParameters.id;
+  // /img/<id>.png gibi uzantılı geliyorsa uzantıyı at (Vela linkin .png/.jpg ile bitmesini ister)
+  if (id) id = id.replace(/\.(png|jpe?g|webp|gif)$/i, '');
+  if (!id || !UUID_RE.test(id)) {
+    const m = UUID_RE.exec((event.rawUrl || '') + ' ' + (event.path || ''));
+    id = m ? m[1] : '';
+  }
   if (!id) {
     return { statusCode: 400, body: 'id gerekli' };
   }
-  // /img/<id>.png gibi uzantılı yoldan geliyorsa uzantıyı at (Vela linkin .png/.jpg ile bitmesini ister)
-  id = id.replace(/\.(png|jpe?g|webp|gif)$/i, '');
   try {
     const store = getStore('etsy-vela-photos');
     const arrayBuffer = await store.get(id, { type: 'arrayBuffer' });
